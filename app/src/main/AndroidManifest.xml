@@ -15,8 +15,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:allowBackup="true"
-        android:requestLegacyExternalStorage="true"
-        android:fullBackupContent="@xml/backup_descriptor"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".MainActivity">
             <intent-filter>

@@ -113,18 +113,16 @@ public class LowMemoryParser {
     public void updateData() {
         for (Map.Entry<String, String> entry : mData.entrySet()) {
             String key = entry.getKey();
-            Log.d("LOWPARSER", "KEY = "+key);
-            if (key.contains("#D")) {
+            if (key.startsWith("#D")) {
                 mData.put(key, TagParser.parseText(mContext, key));
-            } else if (key.contains("#Z")) {
+            } else if (key.startsWith("#Z")) {
                 mData.put(key, TagParser.parseHealthTAG(key));
-            } else if (key.contains("#B")) {
+            } else if (key.startsWith("#B")) {
                 mData.put(key, TagParser.parseBattery(mContext,key));
-            } else if (key.contains("#P")) {
+            } else if (key.startsWith("#P")) {
                 mData.put(key, TagParser.parsePhoneData(mContext,key));
-            } else if (key.contains("#W")) {
+            } else if (key.startsWith("#W")) {
                 // todo produce make weather parser
-
             } else {
                 mData.put(key, "unknown");
             }
@@ -135,5 +133,67 @@ public class LowMemoryParser {
         if (!mData.containsKey(key)) {
             mData.put(key, "");
         }
+    }
+
+    public String parse(String key){
+        String temp = "";
+        if(mData != null){
+            if (key != null) {
+                for (int i = 0; i < key.length() - 1; i++) {
+                    if (key.charAt(i) == '#') {
+                        for (int i2 = i + 1; i2 < key.length(); i2++) {
+                            if (key.charAt(i2) == '#') {
+                                temp = key.substring(i, i2 + 1);
+                                break;
+                            }
+                        }
+                        if (mData.containsKey(temp)) {
+                            key = key.replace(temp, mData.get(temp));
+                        }
+                    }
+                }
+                if (!key.contains("(") && !key.contains(")") && !key.contains("$")) {
+                    return key;
+                }
+                try {
+                    return TagParser.parseFinal(TagParser.parseMath(key));
+                } catch (NumberFormatException e) {
+                    return key;
+                }
+            }
+
+        }
+        return key;
+    }
+
+    public float parseFloat(String key){
+        String temp = "";
+        if(mData != null){
+            if (key != null) {
+                for (int i = 0; i < key.length() - 1; i++) {
+                    if (key.charAt(i) == '#') {
+                        for (int i2 = i + 1; i2 < key.length(); i2++) {
+                            if (key.charAt(i2) == '#') {
+                                temp = key.substring(i, i2 + 1);
+                                break;
+                            }
+                        }
+                        if (mData.containsKey(temp)) {
+                            key = key.replace(temp, mData.get(temp));
+                        }
+                    }
+                }
+                if (!key.contains("(") && !key.contains(")") && !key.contains("$")) {
+                    return Float.parseFloat(key);
+                }
+                try {
+                    return Float.parseFloat(TagParser.parseFinal(TagParser.parseMath(key)));
+                } catch (NumberFormatException e) {
+                    return 0f;
+                }
+            }
+
+        }
+        return 0f;
     }
 }
