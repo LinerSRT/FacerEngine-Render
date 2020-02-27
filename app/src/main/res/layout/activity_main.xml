@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <com.liner.facerengineview.Engine.RenderFacerView
+        android:id="@+id/renderFacer"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/renderFacer">
+
+        <Button
+            android:id="@+id/chooseFace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose .face" />
+
+        <Button
+            android:id="@+id/startDraw"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start draw" />
+
+        <Button
+            android:id="@+id/stopDraw"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stop draw" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
+
+        <Button
+            android:id="@+id/switchAmbient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Switch ambient" />
+
+        <Button
+            android:id="@+id/switchMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mode (Square|Round)" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

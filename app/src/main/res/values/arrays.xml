@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="battery_saver_setting_options">
+        <item>50%</item>
+        <item>25%</item>
+        <item>20%</item>
+        <item>15%</item>
+        <item>10%</item>
+        <item>5%</item>
+    </array>
+    <array name="card_backgrounds">
+        <item>Do not display notification backgrounds.</item>
+        <item>Display notification backgrounds</item>
+    </array>
+    <array name="card_sizes">
+        <item>Small</item>
+        <item>Large</item>
+    </array>
+    <array name="cards_ambient">
+        <item>Display cards in Ambient Mode</item>
+        <item>Do not display cards in Ambient Mode</item>
+    </array>
+    <array name="clear_opaque">
+        <item>Non-Translucent Cards</item>
+        <item>Translucent Cards</item>
+    </array>
+    <array name="devices">
+        <item>Select Your Watch</item>
+        <item>LG G Watch</item>
+        <item>Samsung Gear Live</item>
+        <item>Motorola Moto 360</item>
+        <item>LG G Watch R</item>
+        <item>Sony SmartWatch 3</item>
+        <item>ASUS ZenWatch</item>
+        <item>LG Watch Urbane</item>
+    </array>
+    <array name="display_unread_indicator">
+        <item>Do not show an indicator</item>
+        <item>Show an unread indicator</item>
+    </array>
+    <array name="font_align">
+        <item>Left</item>
+        <item>Center</item>
+        <item>Right</item>
+    </array>
+    <array name="font_options">
+        <item>Roboto Thin</item>
+        <item>Roboto Light</item>
+        <item>Roboto Light Condensed</item>
+        <item>Roboto</item>
+        <item>Roboto Black</item>
+        <item>Roboto Condensed</item>
+        <item>Roboto Slab Thin</item>
+        <item>Roboto Slab Light</item>
+        <item>Roboto Slab</item>
+        <item>Custom</item>
+    </array>
+    <array name="hotword_gravity_round">
+        <item>Top</item>
+        <item>Center</item>
+        <item>Bottom</item>
+    </array>
+    <array name="hotword_gravity_square">
+        <item>Top Left</item>
+        <item>Top Center</item>
+        <item>Top Right</item>
+        <item>Center Left</item>
+        <item>Center</item>
+        <item>Center Right</item>
+        <item>Bottom Left</item>
+        <item>Bottom Center</item>
+        <item>Bottom Right</item>
+    </array>
+    <array name="hotword_gravity_square_large">
+        <item>Top Left</item>
+        <item>Top Center</item>
+        <item>Top Right</item>
+        <item>Center Left</item>
+        <item>Center</item>
+        <item>Center Right</item>
+    </array>
+    <array name="icon_gravity_round">
+        <item>Top</item>
+        <item>Center</item>
+    </array>
+    <array name="img_align">
+        <item>Top Left</item>
+        <item>Top Center</item>
+        <item>Top Right</item>
+        <item>Center Left</item>
+        <item>Center</item>
+        <item>Center Right</item>
+        <item>Bottom Left</item>
+        <item>Bottom Center</item>
+        <item>Bottom Right</item>
+    </array>
+    <array name="int_setting_values">
+        <item>@null</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </array>
+    <array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>2 hours</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>12 hours</item>
+        <item>24 hours</item>
+    </array>
+    <array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>180</item>
+        <item>360</item>
+        <item>720</item>
+        <item>1440</item>
+    </array>
+    <array name="pref_temp_titles">
+        <item>Celsius</item>
+        <item>Fahrenheit</item>
+    </array>
+    <array name="pref_values">
+        <item>@null</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>13</item>
+    </array>
+    <array name="shape_options">
+        <item>Fill</item>
+        <item>Stroke</item>
+    </array>
+    <array name="shapes">
+        <item>Circle</item>
+        <item>Square</item>
+        <item>Polygon</item>
+        <item>Line</item>
+        <item>Triangle</item>
+    </array>
+    <array name="sorting_titles">
+        <item>Alphabetically (A-Z)</item>
+        <item>Alphabetically (Z-A)</item>
+        <item>Recently Used</item>
+    </array>
+    <array name="text_effects">
+        <item>None</item>
+        <item>Stroke</item>
+        <item>Glow</item>
+    </array>
+    <array name="text_transform">
+        <item>None</item>
+        <item>All Uppercase</item>
+        <item>All Lowercase</item>
+    </array>
+    <array name="watchface_text_hours">
+        <item>ONE</item>
+        <item>TWO</item>
+        <item>THREE</item>
+        <item>FOUR</item>
+        <item>FIVE</item>
+        <item>SIX</item>
+        <item>SEVEN</item>
+        <item>EIGHT</item>
+        <item>NINE</item>
+        <item>TEN</item>
+        <item>ELEVEN</item>
+        <item>TWELVE</item>
+        <item>THIRTEEN</item>
+        <item>FOURTEEN</item>
+        <item>FIFTEEN</item>
+        <item>SIXTEEN</item>
+        <item>SEVENTEEN</item>
+        <item>EIGHTEEN</item>
+        <item>NINETEEN</item>
+        <item>TWENTY</item>
+        <item>TWENTY ONE</item>
+        <item>TWENTY TWO</item>
+        <item>TWENTY THREE</item>
+        <item>TWENTY FOUR</item>
+    </array>
+    <array name="watchface_text_minutes_major">
+        <item>TEN</item>
+        <item>TWENTY</item>
+        <item>THIRTY</item>
+        <item>FORTY</item>
+        <item>FIFTY</item>
+    </array>
+    <array name="weather_providers">
+        <item>Yahoo Weather (default)</item>
+        <item>Open Weather Map</item>
+    </array>
+</resources>
