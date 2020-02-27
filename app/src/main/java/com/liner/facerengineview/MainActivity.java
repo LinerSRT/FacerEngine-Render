@@ -21,12 +21,14 @@ import com.liner.facerengineview.Engine.Util.WatchFaceData;
 import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
+    private PreferenceManager preferenceManager;
     private RenderFacerView facerView;
     private Button selectFace, startDraw, stopDraw, switchAmbient, switchMode;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        preferenceManager = PreferenceManager.getInstance(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
             checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -37,6 +39,10 @@ public class MainActivity extends AppCompatActivity {
         stopDraw = findViewById(R.id.stopDraw);
         switchAmbient = findViewById(R.id.switchAmbient);
         switchMode = findViewById(R.id.switchMode);
+        if(!preferenceManager.getString("last_used_watchface", "err").equals("err")){
+            facerView.init(new WatchFaceData(preferenceManager.getString("last_used_watchface", "err")));
+            facerView.startDraw(1000);
+        }
         selectFace.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -60,8 +66,9 @@ public class MainActivity extends AppCompatActivity {
                             new UnCompress(Environment.getExternalStorageDirectory() + File.separator + "Facer/" + faceName + "/", files[0], new UnCompress.OnCompleteListener() {
                                 @Override
                                 public void onComplete() {
+                                    preferenceManager.saveString("last_used_watchface", faceName);
                                     facerView.init(new WatchFaceData(faceName));
-                                    facerView.startDraw(1000);
+                                    facerView.startDraw();
                                 }
 
                                 @Override

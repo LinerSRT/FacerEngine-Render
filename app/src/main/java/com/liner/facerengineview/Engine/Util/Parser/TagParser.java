@@ -1,9 +1,11 @@
 package com.liner.facerengineview.Engine.Util.Parser;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
+import android.text.format.DateFormat;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -14,8 +16,10 @@ import net.objecthunter.exp4j.function.Function;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.EmptyStackException;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -134,7 +138,6 @@ public class TagParser {
 
     //---------- TIME ----------
     public static String parseTimeTAG(Context context, String tag, boolean isSmooth){
-        Log.d("TEXTPARSER", "Input "+tag);
         String[] hours = context.getResources().getStringArray(R.array.watchface_text_hours);
         String[] major = context.getResources().getStringArray(R.array.watchface_text_minutes_major);
         Time time = new Time();
@@ -252,22 +255,67 @@ public class TagParser {
                 return tag.replace(tag, "100");
             case "#DSMOOTH#":
                 return tag.replace(tag, Boolean.toString(isSmooth));
+            case "#Db#":
+                if(DateFormat.is24HourFormat(context)){
+                    if(Integer.valueOf(getDateForFormat("k")) < 10) {
+                        return tag.replace(tag, "0" + getDateForFormat("k"));
+                    } else {
+                        return tag.replace(tag, getDateForFormat("k"));
+                    }
+                } else {
+                    if(Integer.valueOf(getDateForFormat("h")) < 10) {
+                        return tag.replace(tag, "0" + getDateForFormat("h"));
+                    } else {
+                        return tag.replace(tag, getDateForFormat("h"));
+                    }
+                }
+            case "#DM#":
+                return tag.replace(tag, getDateForFormat("M"));
+            case "#DMM#":
+                return tag.replace(tag, getDateForFormat("MM"));
+            case "#DMMM#":
+                return tag.replace(tag, getDateForFormat("MMM"));
+            case "#DMMMM#":
+                return tag.replace(tag, getDateForFormat("MMMM"));
+            case "#DEEEE#":
+                return tag.replace(tag, getDateForFormat("EEEE"));
+            case "#Da#":
+                return tag.replace(tag, getDateForFormat("a"));
             case "#DES#":
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("E", Locale.getDefault());
-                simpleDateFormat.setCalendar(calendar);
-                return tag.replace(tag, simpleDateFormat.format(calendar.getTime()).substring(0, 1));
-                default:
-                    SimpleDateFormat simpleDateFormat2 = new SimpleDateFormat(tag.substring(2), Locale.getDefault());
-                    simpleDateFormat2.setCalendar(calendar);
-                    return tag.replace(tag, simpleDateFormat2.format(calendar.getTime()));
+                return tag.replace(tag, getDateForFormat("E").substring(0,1));default:
+                    return tag;
         }
     }
+    @SuppressLint("WrongConstant")
+    private static String getDateForFormat(String formatString) {
+        if (formatString == null) {
+            return "";
+        }
+        SimpleDateFormat format = new SimpleDateFormat(formatString, Locale.getDefault());
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(java.lang.System.currentTimeMillis());
+        format.setCalendar(calendar);
+        return format.format(calendar.getTime());
+    }
+
+    private static String getUTCDateForFormat(String formatString) {
+        if (formatString == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(java.lang.System.currentTimeMillis());
+        SimpleDateFormat format = new SimpleDateFormat(formatString, Locale.getDefault());
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Date date = new Date(java.lang.System.currentTimeMillis());
+        return format.format(date);
+    }
+
     //-------------------------
 
     //---------- TEXT ----------
     public static String parseText(Context context, String text){
-        Pattern pattern = Pattern.compile("#\\w+#");
-        Matcher matcher = pattern.matcher("");
+        Pattern pattern = Pattern.compile("#\\w*#");
+        Matcher matcher = pattern.matcher(text);
         matcher.reset(text);
         String tempString;
         char tempChar;
@@ -277,19 +325,19 @@ public class TagParser {
             switch (tempChar){
                 case 'D':
                 case 'd':
-                    return tempString.replace(tempString, parseTimeTAG(context, tempString, true));
+                    text = text.replace(tempString, parseTimeTAG(context, tempString, true));
                 case 'B':
                 case 'b':
-                    return tempString.replace(tempString, parseBattery(context,tempString));
+                    text =  text.replace(tempString, parseBattery(context,tempString));
                 case 'Z':
                 case 'z':
-                    return tempString.replace(tempString, parseHealthTAG(tempString));
+                    text =  text.replace(tempString, parseHealthTAG(tempString));
                 case 'P':
                 case 'p':
-                    return tempString.replace(tempString, parsePhoneData(context,tempString));
-                case 'W':
-                case 'w':
-                    return "weather"; //WeatherParser
+                    text =  text.replace(tempString, parsePhoneData(context,tempString));
+                //case 'W':
+                //case 'w':
+                //    text =  "weather"; //WeatherParser
             }
         }
         if (text.contains("(") || text.contains(")") || text.contains("$")) {
@@ -338,13 +386,12 @@ public class TagParser {
         int stepCount = 1002;
         int avgHeartRate = 89;
         String clearTAG = tag.replaceAll("#", "");
-        switch (clearTAG){
-            case "ZSC":
-                return String.valueOf(stepCount);
-            case "ZHR":
-                return String.valueOf(avgHeartRate);
-            default:
-                return tag;
+        if(clearTAG.equals("ZSC")){
+            return String.valueOf(stepCount);
+        } else if (clearTAG.equals("ZHR")){
+            return String.valueOf(avgHeartRate);
+        } else {
+            return tag;
         }
     }
     //-------------------------

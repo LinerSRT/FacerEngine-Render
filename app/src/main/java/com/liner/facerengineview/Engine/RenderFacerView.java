@@ -444,7 +444,12 @@ public class RenderFacerView extends View implements Runnable {
                                         int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
                                         int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
                                         int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
-                                        float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                                         float tempR;
+                                        try {
+                                            tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                                        } catch (NumberFormatException e){
+                                            tempR = 0f;
+                                        }
                                         int tmpOffset;
                                         try {
                                             tmpOffset = Integer.valueOf(layerData.get("alignment"));
@@ -578,7 +583,7 @@ public class RenderFacerView extends View implements Runnable {
                                             }
                                         }
                                         if(layerData.containsKey("radius")){
-                                            radius = Math.round(lowMemoryParser.parseFloat("radius")*renderScale);
+                                            radius = Math.round(lowMemoryParser.parseFloat(layerData.get("radius"))*renderScale);
                                         }
                                         if(layerData.containsKey("width") && layerData.containsKey("height")){
                                             width = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
@@ -699,7 +704,6 @@ public class RenderFacerView extends View implements Runnable {
         drawableHashMap = new HashMap<>();
         typefaceHashMap = new HashMap<>();
         if(watchFaceData.getWatchFaceJSON() != null){
-            Log.e("FacerView", "--init, watchFaceJSON not null, processing...");
             lowMemoryParser = new LowMemoryParser(context, watchFaceData.getWatchFaceJSON());
             watchFaceLayers.clear();
             drawableHashMap.clear();
@@ -707,19 +711,15 @@ public class RenderFacerView extends View implements Runnable {
             for(int i = 0; i<watchFaceData.getWatchFaceJSON().length(); i++){
                 try {
                     JSONObject layerJson = watchFaceData.getWatchFaceJSON().getJSONObject(i);
-                    Log.e("FacerView", "--init, load new layer: "+layerJson.toString());
                     HashMap<String, String> layer = new HashMap<>();
                     Iterator<String> iterator = layerJson.keys();
                     while (iterator.hasNext()){
                         String layerKey = iterator.next();
-                        Log.e("FacerView", "--init, parsing later | key=["+layerKey+"] | value=["+layerJson.get(layerKey)+"]");
                         layer.put(layerKey, String.valueOf(layerJson.get(layerKey)));
                     }
                     watchFaceLayers.add(layer);
-                    Log.e("FacerView", "--init, new layer added");
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    Log.e("FacerView", "--init, got exception: "+e.toString());
                 }
             }
         }

@@ -9,6 +9,8 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LowMemoryParser {
     private Context mContext;
@@ -130,12 +132,19 @@ public class LowMemoryParser {
     }
     
     private void checkKeyExist(String key){
-        if (!mData.containsKey(key)) {
-            mData.put(key, "");
+        Pattern pattern = Pattern.compile("#\\w*#");
+        Matcher matcher = pattern.matcher(key);
+        matcher.reset(key);
+        while (matcher.find()) {
+            if (!mData.containsKey(matcher.group())) {
+                mData.put(matcher.group(), "");
+            }
         }
     }
 
     public String parse(String key){
+
+
         String temp = "";
         if(mData != null){
             if (key != null) {

@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.util.Base64;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -12,6 +13,8 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
@@ -42,16 +45,32 @@ public class WatchFaceData {
         this.watchFaceSettingsFile = new File(watchFaceDirectory, "watchface_settings.json");
         if (watchFaceDirectory.exists()) {
             try {
+                String watchTemp = FacerUtil.read(watchFaceLayersDataFile);
                 this.watchFaceData = new JSONObject(FacerUtil.read(watchFaceDescriptionFile));
+                Log.e("WatchData", "watchTempL "+watchTemp);
                 if (isProtected()) {
-                    String tempData = new String(Base64.decode(FacerUtil.read(watchFaceLayersDataFile), 0), "UTF-8");
-                    this.watchFace = new JSONArray(tempData);
+                    if(isBase64Encoded(watchTemp)){
+                        this.watchFace = new JSONArray(new String(Base64.decode(watchTemp, 0), StandardCharsets.UTF_8));
+                    } else {
+                        this.watchFace = new JSONArray(watchTemp);
+                    }
                 } else {
-                    this.watchFace = new JSONArray(FacerUtil.read(watchFaceLayersDataFile));
+                    this.watchFace = new JSONArray(watchTemp);
                 }
-            } catch (JSONException | UnsupportedEncodingException e){
+            } catch (JSONException e){
                 e.printStackTrace();
             }
+        }
+    }
+
+    private boolean isBase64Encoded(String string) {
+        try {
+            String pattern = "^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$";
+            Pattern r = Pattern.compile(pattern);
+            Matcher m = r.matcher(string);
+            return m.find();
+        } catch (IllegalArgumentException e){
+            return false;
         }
     }
 
