@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         switchMode = findViewById(R.id.switchMode);
         if(!preferenceManager.getString("last_used_watchface", "err").equals("err")){
             facerView.init(new WatchFaceData(preferenceManager.getString("last_used_watchface", "err")));
-            facerView.startDraw(1000);
+            facerView.startDraw(10);
         }
         selectFace.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
                                 public void onComplete() {
                                     preferenceManager.saveString("last_used_watchface", faceName);
                                     facerView.init(new WatchFaceData(faceName));
-                                    facerView.startDraw();
+                                    facerView.startDraw(10);
                                 }
 
                                 @Override

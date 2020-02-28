@@ -1,6 +1,5 @@
 package com.liner.facerengineview.Engine.Util.Parser;
 import android.content.Context;
-import android.util.Log;
 
 
 import org.json.JSONArray;
@@ -116,13 +115,13 @@ public class LowMemoryParser {
         for (Map.Entry<String, String> entry : mData.entrySet()) {
             String key = entry.getKey();
             if (key.startsWith("#D")) {
-                mData.put(key, TagParser.parseText(mContext, key));
+                mData.put(key, TagParser.processText(mContext, key));
             } else if (key.startsWith("#Z")) {
-                mData.put(key, TagParser.parseHealthTAG(key));
+                mData.put(key, TagParser.processHealth(key));
             } else if (key.startsWith("#B")) {
-                mData.put(key, TagParser.parseBattery(mContext,key));
+                mData.put(key, TagParser.processBattery(mContext,key));
             } else if (key.startsWith("#P")) {
-                mData.put(key, TagParser.parsePhoneData(mContext,key));
+                mData.put(key, TagParser.processPhone(mContext,key));
             } else if (key.startsWith("#W")) {
                 // todo produce make weather parser
             } else {
@@ -143,8 +142,6 @@ public class LowMemoryParser {
     }
 
     public String parse(String key){
-
-
         String temp = "";
         if(mData != null){
             if (key != null) {
@@ -165,7 +162,7 @@ public class LowMemoryParser {
                     return key;
                 }
                 try {
-                    return TagParser.parseFinal(TagParser.parseMath(key));
+                    return TagParser.processFinal(TagParser.processMath(key));
                 } catch (NumberFormatException e) {
                     return key;
                 }
@@ -193,10 +190,14 @@ public class LowMemoryParser {
                     }
                 }
                 if (!key.contains("(") && !key.contains(")") && !key.contains("$")) {
-                    return Float.parseFloat(key);
+                    try {
+                        return Float.parseFloat(key);
+                    } catch (NumberFormatException e){
+                       return 0f;
+                    }
                 }
                 try {
-                    return Float.parseFloat(TagParser.parseFinal(TagParser.parseMath(key)));
+                    return Float.parseFloat(TagParser.processFinal(TagParser.processMath(key)));
                 } catch (NumberFormatException e) {
                     return 0f;
                 }

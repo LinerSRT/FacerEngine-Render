@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
 import android.text.format.DateFormat;
-import android.text.format.Time;
-import android.util.Log;
 
 import com.liner.facerengineview.R;
 
@@ -15,6 +13,7 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 import net.objecthunter.exp4j.function.Function;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EmptyStackException;
@@ -28,7 +27,7 @@ public class TagParser {
     private static final Pattern mPattern = Pattern.compile(SPECIAL_REGEX);
 
     //---------- BATTERY ----------
-    public static String parseBattery(Context context, String tag) {
+    public static String processBattery(Context context, String tag) {
         try {
             Intent batteryStatus = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             assert batteryStatus != null;
@@ -67,7 +66,18 @@ public class TagParser {
     //-------------------------
 
     //---------- MATH ----------
-    public static String parseMath(String tag){
+    public static String[] getTagOnly(Context context,String tag){
+        Pattern pattern = Pattern.compile("#\\w*#");
+        Matcher matcher = pattern.matcher(tag);
+        matcher.reset(tag);
+        ArrayList<String> out = new ArrayList<>();
+        while (matcher.find()) {
+            out.add(matcher.group());
+        }
+        return out.toArray(new String[0]);
+    }
+
+    public static String processMath(String tag){
         int openBr = 0;
         int start = 0;
         int i = 0;
@@ -123,7 +133,7 @@ public class TagParser {
     //---------- PHONE ----------
     //"PBP" return phone battery level percentage (redundant, cause cannot get phone status)
     //"PBN" return phone battery level (redundant, cause cannot get phone status)
-    public static String parsePhoneData(Context context, String tag){
+    public static String processPhone(Context context, String tag){
         try {
             if(tag.replaceAll("#", "").equals("PWL")){
                 return String.valueOf(WifiManager.calculateSignalLevel(((WifiManager) context.getSystemService(Context.WIFI_SERVICE)).getConnectionInfo().getRssi(), 4));
@@ -137,125 +147,58 @@ public class TagParser {
     //-------------------------
 
     //---------- TIME ----------
-    public static String parseTimeTAG(Context context, String tag, boolean isSmooth){
+    public static String processTime(Context context, String tag){
         String[] hours = context.getResources().getStringArray(R.array.watchface_text_hours);
         String[] major = context.getResources().getStringArray(R.array.watchface_text_minutes_major);
-        Time time = new Time();
-        Calendar calendar = Calendar.getInstance();
-        time.set(java.lang.System.currentTimeMillis());
-        calendar.setTimeInMillis(java.lang.System.currentTimeMillis());
-        switch (tag){
-            case "#DhT#":
-                return tag.replace(tag, time.hour % 12 == 0 ? hours[11] : hours[(time.hour % 12)-1]);
-            case "#DkT#":
-                return tag.replace(tag, time.hour == 0 ? hours[23] : hours[time.hour - 1]);
-            case "#DmT#":
-                String tempString = "";
-                if(time.minute > 20 || time.minute == 0){
-                    if(time.minute != 0){
-                        switch (time.minute / 10){
-                            case 2:
-                                tempString = hours[19];
-                                break;
-                            case 3:
-                                tempString = major[2];
-                                break;
-                            case 4:
-                                tempString = major[3];
-                                break;
-                            case 5:
-                                tempString = major[4];
-                                break;
-                        }
-                        return tag.replace(tag, tempString + " " + hours[(time.minute % 10)-1]);
-                    }
-                }
-                return tag.replace(tag, tempString);
-            case "#DmMT#":
-                return tag.replace(tag, (time.minute / 10) >= 2 ? major[(time.minute / 10)-1] : "");
-            case "#DmST#":
-                if (time.minute % 10 != 0 && time.minute / 10 != 1) {
-                    return tag.replace(tag, hours[time.minute % 10 - 1]);
-                } else if (time.minute / 10 == 1) {
-                    return tag.replace(tag, hours[((time.minute / 10 * 10) + time.minute % 10) - 1]);
-                }
-            case "#DWFS#":
-                return tag.replace(tag, String.valueOf(time.second * 6));
-            case "#DWFK#":
-            case "#DhoT#":
-                return tag.replace(tag, String.valueOf((time.hour % 12) * 30));
-            case "#DWFH#":
-            case "#DhoTb#":
-                return tag.replace(tag, String.valueOf(time.hour * 15));
-            case "#DWFKS#":
-                return tag.replace(tag, String.valueOf(((double) ((time.hour % 12) * 30)) + (((double) time.minute) * 0.5d)));
-            case "#DWFHS#":
-                return tag.replace(tag, String.valueOf(((double) (time.hour * 15)) + (((double) time.minute) * 0.25d)));
-            case "#DWFM#":
-            case "#DmoT#":
-                return tag.replace(tag, String.valueOf(time.minute * 6));
-            case "#DWFMS#":
-                return tag.replace(tag, String.valueOf(((double) (time.minute * 6)) + (((double) time.second) * 0.1d)));
-            case "#DseT#":
-                return tag.replace(tag, String.valueOf(time.second * 6));
-            case "#DHZ#":
-            case "#DkZ#":
-                return tag.replace(tag, time.hour < 10 ? "0"+time.hour : String.valueOf(time.hour));
-            case "#DKZ#":
-                return tag.replace(tag, time.hour < 10 ? "0"+time.hour % 12 : String.valueOf(time.hour % 12));
-            case "#DhZ#":
-                String tmpString;
-                if (time.hour == 0 || time.hour == 12) {
-                    tmpString = "12";
-                } else {
-                    tmpString = String.valueOf(time.hour % 12);
-                }
-                if (!(time.hour % 12 >= 10 || time.hour == 0 || time.hour == 12)) {
-                    return tag.replace(tag, "0" + tmpString);
-                } else {
-                    return tag.replace(tag,  tmpString);
-                }
-            case "#DhZA#":
-                return tag.replace(tag, (time.hour == 0 || time.hour == 12) ? "1" : String.valueOf((time.hour % 12) / 10));
-            case "#DhZB#":
-                return tag.replace(tag, (time.hour == 0 || time.hour == 12) ? "2" : String.valueOf((time.hour % 12) % 10));
-            case "#DkZA#":
-                return tag.replace(tag, String.valueOf(time.hour / 10));
-            case "#DkZB#":
-                return tag.replace(tag, String.valueOf(time.hour % 10));
-            case "#DmZ#":
-                return tag.replace(tag, time.minute < 10 ? "0"+time.minute : String.valueOf(time.minute));
-            case "#DsZ#":
-                return tag.replace(tag, time.second < 10 ? "0"+time.second : String.valueOf(time.second));
-            case "#DWR#":
-                return tag.replace(tag, String.valueOf((360.0f / ((float) calendar.getActualMaximum(Calendar.DAY_OF_WEEK))) * ((float) (time.weekDay + 1))));
-            case "#DMR#":
-                return tag.replace(tag, String.valueOf((360.0f / ((float) calendar.getActualMaximum(Calendar.DAY_OF_MONTH))) * ((float) time.monthDay)));
-            case "#DYR#":
-                return tag.replace(tag, String.valueOf((360.0f / ((float) calendar.getActualMaximum(Calendar.DAY_OF_YEAR))) * ((float) (time.yearDay + 1))));
-            case "#DMYR#":
-                return tag.replace(tag, String.valueOf((time.month + 1) * 30));
-            case "#Dd#":
-                return tag.replace(tag, String.valueOf(time.monthDay));
-            case "#DdL#":
-                return tag.replace(tag, time.monthDay < 10 ? "0"+time.monthDay : String.valueOf(time.monthDay));
-            case "#DWFSS#":
-                return tag.replace(tag, String.format(Locale.US, "%.3f", ((double) (time.second * 6)) + (((double) java.lang.System.currentTimeMillis() % 1000) * 0.006d)));
-            case "#Dsm#":
-                return tag.replace(tag, String.format(Locale.US, "%.3f", ((double) ((float) time.second)) + (((double) java.lang.System.currentTimeMillis() % 1000) * 0.001d)));
-            case "#Dms#":
-                return tag.replace(tag, String.format(Locale.US, "%.3f", ((double) java.lang.System.currentTimeMillis() % 1000) * 0.001d));
-            case "#DOW#":
-                return tag.replace(tag, String.valueOf(time.weekDay));
-            case "#DOWB#":
-                return tag.replace(tag, String.valueOf(time.weekDay + 1));
-            case "#DIM#":
-                return tag.replace(tag, String.valueOf(calendar.getActualMaximum(Calendar.DAY_OF_MONTH)));
-            case "#DISFACER#":
-                return tag.replace(tag, "100");
-            case "#DSMOOTH#":
-                return tag.replace(tag, Boolean.toString(isSmooth));
-            case "#Db#":
+        String clearedTAG = tag.replaceAll("#", "");
+        switch (clearedTAG){
+            case "DWE": //Time elapsed since last watch face view (in seconds with 0.01 parts)
+                return "0";
+            case "DNOW": //Current timestamp
+            case "DSYNC": //Timestamp at which watch face was synced
+                long timestamp = java.lang.System.currentTimeMillis()/1000;
+                return Long.toString(timestamp);
+            case "Dy": //Year
+                return tag.replace(tag, getDateForFormat("y"));
+            case "Dyy": //Short Year
+                return tag.replace(tag, getDateForFormat("yy"));
+            case "Dyyyy": //Long Year
+                return tag.replace(tag, getDateForFormat("yyyy"));
+            case "DM": //Month in Year (Numeric)
+                return tag.replace(tag, getDateForFormat("M"));
+            case "DMM": //Month in Year (Numeric) with leading 0
+                return tag.replace(tag, getDateForFormat("MM"));
+            case "DMMM": //Month in Year (Short String)
+                return tag.replace(tag, getDateForFormat("MMM"));
+            case "DMMMM": //Month in Year (String)
+                return tag.replace(tag, getDateForFormat("MMMM"));
+            case "DW": //Week in Month
+                return tag.replace(tag, getDateForFormat("W"));
+            case "Dw": //Week in Year
+                return tag.replace(tag, getDateForFormat("w"));
+            case "DD":
+                return tag.replace(tag, getDateForFormat("DD"));
+            case "Dd":
+                return tag.replace(tag, getDateForFormat("d"));
+            case "DdL":
+                return tag.replace(tag, Integer.parseInt(getDateForFormat("d")) < 10 ? "0"+getDateForFormat("d") : getDateForFormat("d"));
+            case "DIM":
+                return tag.replace(tag, String.valueOf(Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH)));
+            case "DE":
+                return tag.replace(tag, getDateForFormat("E"));
+            case "DES":
+                return tag.replace(tag, getDateForFormat("E").substring(0, 1));
+            case "DOW":
+                return tag.replace(tag, String.valueOf(Integer.parseInt(getDateForFormat("u"))-1));
+            case "DOWB":
+                return tag.replace(tag, getDateForFormat("u"));
+            case "DEEEE":
+                return tag.replace(tag, getDateForFormat("EEEE"));
+            case "DF":
+                return tag.replace(tag, getDateForFormat("F"));
+            case "Da":
+                return tag.replace(tag, getDateForFormat("a"));
+            case "Db":
                 if(DateFormat.is24HourFormat(context)){
                     if(Integer.valueOf(getDateForFormat("k")) < 10) {
                         return tag.replace(tag, "0" + getDateForFormat("k"));
@@ -269,20 +212,172 @@ public class TagParser {
                         return tag.replace(tag, getDateForFormat("h"));
                     }
                 }
-            case "#DM#":
-                return tag.replace(tag, getDateForFormat("M"));
-            case "#DMM#":
-                return tag.replace(tag, getDateForFormat("MM"));
-            case "#DMMM#":
-                return tag.replace(tag, getDateForFormat("MMM"));
-            case "#DMMMM#":
-                return tag.replace(tag, getDateForFormat("MMMM"));
-            case "#DEEEE#":
-                return tag.replace(tag, getDateForFormat("EEEE"));
-            case "#Da#":
-                return tag.replace(tag, getDateForFormat("a"));
-            case "#DES#":
-                return tag.replace(tag, getDateForFormat("E").substring(0,1));default:
+            case "Dh":
+                return tag.replace(tag, getDateForFormat("h"));
+            case "Dk":
+                return tag.replace(tag, getDateForFormat("k"));
+            case "DH":
+                return tag.replace(tag, getDateForFormat("H"));
+            case "DK":
+                return tag.replace(tag, getDateForFormat("K"));
+            case "DHZ":
+                if(Integer.valueOf(getDateForFormat("H")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("H"));
+                } else {
+                    return tag.replace(tag, getDateForFormat("H"));
+                }
+            case "DkZ":
+                if(Integer.valueOf(getDateForFormat("k")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("k"));
+                } else {
+                    return tag.replace(tag, getDateForFormat("k"));
+                }
+            case "DkZA":
+                if(Integer.valueOf(getDateForFormat("k")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("k").substring(0,1));
+                } else {
+                    return tag.replace(tag, getDateForFormat("k").substring(0,1));
+                }
+            case "DkZB":
+                if(Integer.valueOf(getDateForFormat("k")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("k").substring(1,2));
+                } else {
+                    return tag.replace(tag, getDateForFormat("k").substring(1,2));
+                }
+            case "DKZ":
+                if(Integer.valueOf(getDateForFormat("K")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("K"));
+                } else {
+                    return tag.replace(tag, getDateForFormat("K"));
+                }
+            case "DhZ":
+                if(Integer.valueOf(getDateForFormat("h")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("h"));
+                } else {
+                    return tag.replace(tag, getDateForFormat("h"));
+                }
+            case "DhZA":
+                if(Integer.valueOf(getDateForFormat("h")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("h").substring(0,1));
+                } else {
+                    return tag.replace(tag, getDateForFormat("h").substring(0,1));
+                }
+            case "DhZB":
+                if(Integer.valueOf(getDateForFormat("h")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("h").substring(1,2));
+                } else {
+                    return tag.replace(tag, getDateForFormat("h").substring(1,2));
+                }
+            case "DhoT":
+                return tag.replace(tag, String.valueOf((Integer.parseInt(getDateForFormat("H"))%12)*30));
+            case "DhoTb":
+                return tag.replace(tag, String.valueOf((Integer.parseInt(getDateForFormat("H"))*15)));
+            case "DWFK":
+                return tag.replace(tag, String.valueOf((Integer.parseInt(getDateForFormat("K"))%12)*30));
+            case "DWFH":
+                return tag.replace(tag, String.valueOf((Integer.parseInt(getDateForFormat("K"))*15)));
+            case "DWFKS":
+                return tag.replace(tag, String.valueOf(((double) ((Integer.parseInt(getDateForFormat("H")) % 12) * 30)) + (((double) Integer.parseInt(getDateForFormat("m"))) * 0.5d)));
+            case "DWFHS":
+                return tag.replace(tag, String.valueOf(((double) ((Integer.parseInt(getDateForFormat("H")) % 12) * 30)) + (((double) Integer.parseInt(getDateForFormat("m"))) * 0.25d)));
+            case "DhT":
+                return tag.replace(tag, (Integer.parseInt(getDateForFormat("K")) % 12 == 0 ? hours[11] : hours[((Integer.parseInt(getDateForFormat("K")) % 12)-1)]));
+            case "DkT":
+                return tag.replace(tag, (Integer.parseInt(getDateForFormat("H")) % 12 == 0 ? hours[11] : hours[((Integer.parseInt(getDateForFormat("H")) % 12)-1)]));
+            case "Dm":
+                return tag.replace(tag, getDateForFormat("m"));
+            case "DmZ":
+                if(Integer.valueOf(getDateForFormat("m")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("m"));
+                } else {
+                    return tag.replace(tag, getDateForFormat("m"));
+                }
+            case "DWFM":
+                return tag.replace(tag, String.valueOf(Integer.parseInt(getDateForFormat("m")) * 6));
+            case "DWFMS":
+                return tag.replace(tag, String.valueOf(((double) (Integer.parseInt(getDateForFormat("m")) * 6)) + (((double) Integer.parseInt(getDateForFormat("s"))) * 0.1d)));
+            case "DmT":
+                String tempString = "";
+                if(Integer.parseInt(getDateForFormat("m")) > 20 || Integer.parseInt(getDateForFormat("m")) == 0){
+                    if(Integer.parseInt(getDateForFormat("m")) != 0){
+                        switch (Integer.parseInt(getDateForFormat("m")) / 10){
+                            case 2:
+                                tempString = hours[19];
+                                break;
+                            case 3:
+                                tempString = major[2];
+                                break;
+                            case 4:
+                                tempString = major[3];
+                                break;
+                            case 5:
+                                tempString = major[4];
+                                break;
+                        }
+                        return tag.replace(tag, tempString + " " + hours[(Integer.parseInt(getDateForFormat("m")) % 10)-1]);
+                    }
+                }
+                return tag.replace(tag, tempString);
+            case "DmMT":
+                return tag.replace(tag, (Integer.parseInt(getDateForFormat("m")) / 10) >= 2 ? major[(Integer.parseInt(getDateForFormat("m")) / 10)-1] : "");
+            case "DmST":
+                if (Integer.parseInt(getDateForFormat("m")) % 10 != 0 && Integer.parseInt(getDateForFormat("m")) / 10 != 1) {
+                    return tag.replace(tag, hours[Integer.parseInt(getDateForFormat("m")) % 10 - 1]);
+                } else if (Integer.parseInt(getDateForFormat("m")) / 10 == 1) {
+                    return tag.replace(tag, hours[((Integer.parseInt(getDateForFormat("m")) / 10 * 10) + Integer.parseInt(getDateForFormat("m")) % 10) - 1]);
+                }
+            case "Ds":
+                return tag.replace(tag, getDateForFormat("s"));
+            case "DsZ":
+                if(Integer.valueOf(getDateForFormat("s")) < 10) {
+                    return tag.replace(tag, "0" + getDateForFormat("s"));
+                } else {
+                    return tag.replace(tag, getDateForFormat("s"));
+                }
+            case "Dsm":
+                return tag.replace(tag, String.format(Locale.getDefault(), "%.3f", ((double) ((float) Integer.parseInt(getDateForFormat("s")))) + (((double) java.lang.System.currentTimeMillis() % 1000) * 0.001d)));
+            case "DWFS":
+            case "DseT":
+                return tag.replace(tag, String.valueOf(Integer.parseInt(getDateForFormat("s")) * 6));
+            case "DWFSS":
+                return tag.replace(tag, String.format(Locale.US, "%.3f", ((double) (Integer.parseInt(getDateForFormat("s")) * 6)) + (((double) java.lang.System.currentTimeMillis() % 1000) * 0.006d)));
+            case "DSMOOTH":
+                return Boolean.toString(true);
+            case "Dz":
+                return tag.replace(tag, getDateForFormat("z"));
+            case "Dzzzz":
+                return tag.replace(tag, getDateForFormat("zzzz"));
+            case "DWR":
+                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_WEEK))) * ((float) (Integer.parseInt(getDateForFormat("s"))))));
+            case "DMR":
+                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH))) * ((float) Integer.parseInt(getDateForFormat("d")))));
+            case "DYR":
+                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_YEAR))) * ((float) (Integer.parseInt(getDateForFormat("D"))))));
+            case "DMYR":
+                return tag.replace(tag, String.valueOf((Integer.parseInt(getDateForFormat("M"))) * 30));
+            case "DUh":
+                return tag.replace(tag, getUTCDateForFormat("h"));
+            case "DUk":
+                return tag.replace(tag, getUTCDateForFormat("k"));
+            case "DUH":
+                return tag.replace(tag, getUTCDateForFormat("H"));
+            case "DUK":
+                return tag.replace(tag, getUTCDateForFormat("K"));
+            case "DUb":
+                if(DateFormat.is24HourFormat(context)){
+                    if(Integer.valueOf(getUTCDateForFormat("k")) < 10) {
+                        return tag.replace(tag, "0" + getUTCDateForFormat("k"));
+                    } else {
+                        return tag.replace(tag, getUTCDateForFormat("k"));
+                    }
+                } else {
+                    if(Integer.valueOf(getUTCDateForFormat("h")) < 10) {
+                        return tag.replace(tag, "0" + getUTCDateForFormat("h"));
+                    } else {
+                        return tag.replace(tag, getUTCDateForFormat("h"));
+                    }
+                }
+                default:
                     return tag;
         }
     }
@@ -297,7 +392,6 @@ public class TagParser {
         format.setCalendar(calendar);
         return format.format(calendar.getTime());
     }
-
     private static String getUTCDateForFormat(String formatString) {
         if (formatString == null) {
             return "";
@@ -313,7 +407,7 @@ public class TagParser {
     //-------------------------
 
     //---------- TEXT ----------
-    public static String parseText(Context context, String text){
+    public static String processText(Context context, String text){
         Pattern pattern = Pattern.compile("#\\w*#");
         Matcher matcher = pattern.matcher(text);
         matcher.reset(text);
@@ -325,64 +419,30 @@ public class TagParser {
             switch (tempChar){
                 case 'D':
                 case 'd':
-                    text = text.replace(tempString, parseTimeTAG(context, tempString, true));
+                    text = text.replace(tempString, processTime(context, tempString));
                 case 'B':
                 case 'b':
-                    text =  text.replace(tempString, parseBattery(context,tempString));
+                    text =  text.replace(tempString, processBattery(context,tempString));
                 case 'Z':
                 case 'z':
-                    text =  text.replace(tempString, parseHealthTAG(tempString));
+                    text =  text.replace(tempString, processHealth(tempString));
                 case 'P':
                 case 'p':
-                    text =  text.replace(tempString, parsePhoneData(context,tempString));
+                    text =  text.replace(tempString, processPhone(context,tempString));
                 //case 'W':
                 //case 'w':
                 //    text =  "weather"; //WeatherParser
             }
         }
         if (text.contains("(") || text.contains(")") || text.contains("$")) {
-            return parseFinal(TagParser.parseMath(text));
+            return processFinal(TagParser.processMath(text));
         }
         return text;
     }
-    public static float parseTextFloat(Context context, String text){
-        Pattern pattern = Pattern.compile("#\\w+#");
-        Matcher matcher = pattern.matcher("");
-        matcher.reset(text);
-        String tempString;
-        char tempChar;
-        while (matcher.find()){
-            tempString = matcher.group();
-            tempChar = tempString.charAt(1);
-            switch (tempChar){
-                case 'D':
-                case 'd':
-                    return Float.parseFloat(tempString.replace(tempString, parseTimeTAG(context, tempString, true)));
-                case 'B':
-                case 'b':
-                    return Float.parseFloat(tempString.replace(tempString, parseBattery(context,tempString)));
-                case 'Z':
-                case 'z':
-                    return 0f; //WearParser
-                case 'W':
-                case 'w':
-                    return 0f; //WeatherParser
-            }
-        }
-        if (text.contains("(") || text.contains(")") || text.contains("$")) {
-            return Float.parseFloat(parseFinal(TagParser.parseMath(text)));
-        }
-        try {
-            return Float.parseFloat(text);
-        } catch (NumberFormatException e2) {
-            return 0.0f;
-        }
-    }
     //-------------------------
 
-
     //---------- HEALTH ----------
-    public static String parseHealthTAG(String tag){
+    public static String processHealth(String tag){
         int stepCount = 1002;
         int avgHeartRate = 89;
         String clearTAG = tag.replaceAll("#", "");
@@ -396,9 +456,8 @@ public class TagParser {
     }
     //-------------------------
 
-
     //---------- FINAL ------------
-    public static String parseFinal(String string) {
+    public static String processFinal(String string) {
         Matcher mMatcher = mPattern.matcher(string);
         while (mMatcher.find()) {
             String group1;

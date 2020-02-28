@@ -41,6 +41,7 @@ public class RenderFacerView extends View implements Runnable {
     private ArrayList<HashMap<String, String>> watchFaceLayers;
     private HashMap<String, BitmapDrawable> drawableHashMap;
     private HashMap<String, Typeface> typefaceHashMap;
+    private WatchFaceData watchFaceData;
 
     private LowMemoryParser lowMemoryParser;
 
@@ -197,10 +198,10 @@ public class RenderFacerView extends View implements Runnable {
                                     if (typefaceHashMap.containsKey(layerData.get("new_font_name"))) {
                                         canvasPaint.setTypeface(typefaceHashMap.get(layerData.get("new_font_name")));
                                     } else {
-                                        if (new File(FacerUtil.getFontDirectory(), layerData.get("new_font_name")).exists()) {
+                                        if(watchFaceData != null){
                                             try {
-                                                typefaceHashMap.put(layerData.get("new_font_name"), Typeface.createFromFile(new File(FacerUtil.getFontDirectory(), layerData.get("new_font_name"))));
-                                                canvasPaint.setTypeface(Typeface.createFromFile(new File(FacerUtil.getFontDirectory(), layerData.get("new_font_name"))));
+                                                typefaceHashMap.put(layerData.get("new_font_name"), Typeface.createFromFile(new File(watchFaceData.getWatchFaceFontDir(), layerData.get("new_font_name"))));
+                                                canvasPaint.setTypeface(Typeface.createFromFile(new File(watchFaceData.getWatchFaceFontDir(), layerData.get("new_font_name"))));
                                             } catch (Exception e3) {
                                                 e3.printStackTrace();
                                             }
@@ -698,6 +699,7 @@ public class RenderFacerView extends View implements Runnable {
     }
 
     public void init(WatchFaceData watchFaceData){
+        this.watchFaceData = watchFaceData;
         imageDirectory = watchFaceData.getWatchFaceImageDir();
         isProtected = watchFaceData.isProtected();
         watchFaceLayers = new ArrayList<>();

@@ -44,22 +44,34 @@ public class WatchFaceData {
         this.watchFaceDescriptionFile = new File(watchFaceDirectory, "description.json");
         this.watchFaceSettingsFile = new File(watchFaceDirectory, "watchface_settings.json");
         if (watchFaceDirectory.exists()) {
-            try {
                 String watchTemp = FacerUtil.read(watchFaceLayersDataFile);
+            try {
                 this.watchFaceData = new JSONObject(FacerUtil.read(watchFaceDescriptionFile));
-                Log.e("WatchData", "watchTempL "+watchTemp);
-                if (isProtected()) {
-                    if(isBase64Encoded(watchTemp)){
-                        this.watchFace = new JSONArray(new String(Base64.decode(watchTemp, 0), StandardCharsets.UTF_8));
-                    } else {
-                        this.watchFace = new JSONArray(watchTemp);
-                    }
-                } else {
-                    this.watchFace = new JSONArray(watchTemp);
-                }
-            } catch (JSONException e){
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
+            if(watchFaceData != null){
+                if (isProtected()) {
+                    try {
+                        this.watchFace = new JSONArray(new String(Base64.decode(watchTemp, 0), StandardCharsets.UTF_8));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        try {
+                            this.watchFace = new JSONArray(watchTemp);
+                        } catch (JSONException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                } else {
+                    try {
+                        this.watchFace = new JSONArray(watchTemp);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+
         }
     }
 

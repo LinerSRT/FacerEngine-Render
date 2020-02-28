@@ -8,8 +8,8 @@
 
     <com.liner.facerengineview.Engine.RenderFacerView
         android:id="@+id/renderFacer"
-        android:layout_width="250dp"
-        android:layout_height="250dp"
+        android:layout_width="400dp"
+        android:layout_height="400dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
