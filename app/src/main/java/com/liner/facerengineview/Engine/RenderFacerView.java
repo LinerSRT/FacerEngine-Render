@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 import static com.liner.facerengineview.Engine.Util.FacerUtil.SHAPE_CIRCLE;
@@ -62,11 +63,13 @@ public class RenderFacerView extends View implements Runnable {
     public RenderFacerView(Context context) {
         super(context);
         this.context = context;
+        setLayerType(LAYER_TYPE_HARDWARE, canvasPaint);
     }
 
     public RenderFacerView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
+        setLayerType(LAYER_TYPE_HARDWARE, canvasPaint);
     }
 
     public void init(WatchFaceData watchFaceData){
@@ -148,7 +151,11 @@ public class RenderFacerView extends View implements Runnable {
             try {
                 lowMemoryParser.updateData();
                 postInvalidate();
-                Thread.sleep(UPDATE_FREQ);
+                if(isLowPower){
+                    Thread.sleep(5000);
+                } else {
+                    Thread.sleep(UPDATE_FREQ);
+                }
             } catch (InterruptedException localInterruptedException) {
                 localInterruptedException.printStackTrace();
             }
@@ -192,8 +199,9 @@ public class RenderFacerView extends View implements Runnable {
 
     //Draw methods
     private void drawText(Canvas canvas, HashMap<String, String> layerData){
-        canvasPaint.reset();
         float alpha;
+        String text;
+        canvasPaint.reset();
         try {
             alpha = Math.round(2.55d * lowMemoryParser.parseFloat(layerData.get("opacity")));
         } catch (NumberFormatException e){
@@ -201,7 +209,6 @@ public class RenderFacerView extends View implements Runnable {
         }
         if(alpha != 0f){
             Typeface typeface;
-            String text;
             if(layerData.containsKey("text")){
                 text = lowMemoryParser.parse(layerData.get("text"));
             } else {
@@ -240,7 +247,7 @@ public class RenderFacerView extends View implements Runnable {
                             strokeColor = Integer.parseInt(layerData.get("stroke_color"));
                         }
                         shouldStroke = true;
-
+//
                         break;
                     case 2:
                         if(!layerData.containsKey("glow_size") || !layerData.containsKey("glow_color")){
@@ -356,7 +363,6 @@ public class RenderFacerView extends View implements Runnable {
                 if (!drawableHashMap.containsKey(layerData.get("hash"))) {
                     file = new File(imageDirectory, layerData.get("hash"));
                     if (file.exists()) {
-                        Log.d("RenderView", "Loading a bitmap. [ " + layerData.get("hash") + " ]");
                         if (isProtected) {
                             try {
                                 converted_data = Base64.decode(FacerUtil.read(file), 0);
@@ -488,7 +494,6 @@ public class RenderFacerView extends View implements Runnable {
                 if (!drawableHashMap.containsKey(layerData.get("hash_round"))) {
                     file = new File(imageDirectory, layerData.get("hash_round"));
                     if (file.exists()) {
-                        Log.d("RenderView", "Loading a bitmap. [ " + layerData.get("hash_round") + " ]");
                         if (isProtected) {
                             try {
                                 converted_data = Base64.decode(FacerUtil.read(file), 0);

@@ -122,10 +122,8 @@ public class LowMemoryParser {
                 mData.put(key, TagParser.processBattery(mContext,key));
             } else if (key.startsWith("#P")) {
                 mData.put(key, TagParser.processPhone(mContext,key));
-            } else if (key.startsWith("#W")) {
-                // todo produce make weather parser
-            } else {
-                mData.put(key, "unknown");
+            } else if(key.startsWith("#W")){
+                mData.put(key, TagParser.processWeather(key));
             }
         }
     }

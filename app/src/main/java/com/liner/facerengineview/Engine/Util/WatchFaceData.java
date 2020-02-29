@@ -1,5 +1,6 @@
 package com.liner.facerengineview.Engine.Util;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
@@ -28,7 +29,7 @@ public class WatchFaceData {
     private File watchFaceLayersDataFile;
     private File watchFaceSettingsFile;
 
-    public WatchFaceData(String name) {
+    public WatchFaceData(Context context, String name) {
         this.watchFace = null;
         this.watchFaceData = null;
         this.watchFaceDirectory = null;
@@ -37,7 +38,7 @@ public class WatchFaceData {
         this.watchFaceLayersDataFile = null;
         this.watchFaceDescriptionFile = null;
         this.watchFaceSettingsFile = null;
-        this.watchFaceDirectory = new File(Environment.getExternalStorageDirectory(), "Facer/" + name);
+        this.watchFaceDirectory = new File( context.getCacheDir() , "Facer/" + name);
         this.watchFaceFontsDirectory = new File(watchFaceDirectory, "fonts");
         this.watchFaceImageDirectory = new File(watchFaceDirectory, "images");
         this.watchFaceLayersDataFile = new File(watchFaceDirectory, "watchface.json");
@@ -53,14 +54,13 @@ public class WatchFaceData {
             if(watchFaceData != null){
                 if (isProtected()) {
                     try {
-                        this.watchFace = new JSONArray(new String(Base64.decode(watchTemp, 0), StandardCharsets.UTF_8));
+                        if(watchTemp.contains("\"id\":")){
+                            this.watchFace = new JSONArray(watchTemp);
+                        } else {
+                            this.watchFace = new JSONArray(new String(Base64.decode(watchTemp, 0), StandardCharsets.UTF_8));
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        try {
-                            this.watchFace = new JSONArray(watchTemp);
-                        } catch (JSONException ex) {
-                            ex.printStackTrace();
-                        }
                     }
                 } else {
                     try {

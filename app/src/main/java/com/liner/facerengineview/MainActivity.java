@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
         switchAmbient = findViewById(R.id.switchAmbient);
         switchMode = findViewById(R.id.switchMode);
         if(!preferenceManager.getString("last_used_watchface", "err").equals("err")){
-            facerView.init(new WatchFaceData(preferenceManager.getString("last_used_watchface", "err")));
+            facerView.init(new WatchFaceData(this,preferenceManager.getString("last_used_watchface", "err")));
             facerView.startDraw(10);
         }
         selectFace.setOnClickListener(new View.OnClickListener() {
@@ -63,11 +63,11 @@ public class MainActivity extends AppCompatActivity {
                         if(files.length != 0) {
                             final File faceFile = new File(files[0]);
                             final String faceName = faceFile.getName().replaceFirst("[.][^.]+$", "");
-                            new UnCompress(Environment.getExternalStorageDirectory() + File.separator + "Facer/" + faceName + "/", files[0], new UnCompress.OnCompleteListener() {
+                            new UnCompress(getCacheDir() + File.separator + "Facer/" + faceName + "/", files[0], new UnCompress.OnCompleteListener() {
                                 @Override
                                 public void onComplete() {
                                     preferenceManager.saveString("last_used_watchface", faceName);
-                                    facerView.init(new WatchFaceData(faceName));
+                                    facerView.init(new WatchFaceData(MainActivity.this, faceName));
                                     facerView.startDraw(10);
                                 }
 
