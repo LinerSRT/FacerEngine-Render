@@ -1,4 +1,4 @@
-package com.liner.facerengineview.Engine.Util.Parser;
+package com.liner.facerengineview.Engine;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -28,54 +28,242 @@ import com.liner.facerengineview.R;
 import net.objecthunter.exp4j.ExpressionBuilder;
 import net.objecthunter.exp4j.function.Function;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EmptyStackException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TagParser {
-    private static final String SPECIAL_REGEX = "(\\$(\\-?\\w+\\.?\\d*)(=|!=|>|<|<=|>=)(\\-?\\w+\\.?\\d*)(\\|\\||&&)?(\\-?\\w+\\.?\\d*)?(=|!=|>|<|<=|>=)?(\\-?\\w+\\.?\\d*)?(\\|\\||&&)?(\\-?\\w+\\.?\\d*)?(=|!=|>|<|<=|>=)?(\\-?\\w+\\.?\\d*)?\\?([^:\\r\\n]*):([^$\\r\\n]*)\\$)";
-    private static final Pattern mPattern = Pattern.compile(SPECIAL_REGEX);
-    private static final String METHOD_ACCEL_ACCEL_X = "accelerometerRawX";
-    private static final String METHOD_ACCEL_ACCEL_Y = "accelerometerRawY";
-    private static final String METHOD_ACCEL_X = "accelerometerX";
-    private static final String METHOD_ACCEL_Y = "accelerometerY";
-    private static final String METHOD_BOXCAR = "boxcar";
-    private static final String METHOD_CLAMP = "clamp";
-    private static final String METHOD_DEG = "deg";
-    private static final String METHOD_HEAVISIDE = "heaviside";
-    private static final String METHOD_INTERP_ACCEL = "interpAccel";
-    private static final String METHOD_INTERP_ACCELDECEL = "interpAccelDecel";
-    private static final String METHOD_INTERP_ANTICIPATE = "interpAnticipate";
-    private static final String METHOD_INTERP_ANTICIPATEOVERSHOOT = "interpAnticipateOvershoot";
-    private static final String METHOD_INTERP_BOUNCE = "interpBounce";
-    private static final String METHOD_INTERP_CYCLE = "interpCycle";
-    private static final String METHOD_INTERP_DECEL = "interpDecel";
-    private static final String METHOD_INTERP_FASTOUTLINEARIN = "interpFastOutLinearIn";
-    private static final String METHOD_INTERP_FASTOUTSLOWIN = "interpFastOutSlowIn";
-    private static final String METHOD_INTERP_LINEAR = "interpLinear";
-    private static final String METHOD_INTERP_LINEAROUTSLOWIN = "interpLinearOutSlowIn";
-    private static final String METHOD_INTERP_OVERSHOOT = "interpOvershoot";
-    private static final String METHOD_ORBITX = "orbitX";
-    private static final String METHOD_ORBITY = "orbitY";
-    private static final String METHOD_RAD = "rad";
-    private static final String METHOD_RAND = "rand";
-    private static final String METHOD_RAND_STATE = "stRand";
-    private static final String METHOD_RAND_WAKE = "wakeRand";
-    private static final String METHOD_ROUND = "round";
-    private static final String METHOD_SQUAREWAVE = "squareWave";
-    private static final String[] OPERATORS = new String[]{"+", "-", "/", "*"};
-    private static final String PARAM_SEPARATOR = ",";
-    private static final String[] METHOD_LIST = new String[]{METHOD_ROUND, METHOD_RAND, METHOD_RAND_STATE, METHOD_RAND_WAKE, METHOD_RAD, METHOD_DEG, METHOD_CLAMP, METHOD_ORBITX, METHOD_ORBITY, METHOD_INTERP_LINEAR, METHOD_INTERP_ACCEL, METHOD_INTERP_DECEL, METHOD_INTERP_ACCELDECEL, METHOD_INTERP_ANTICIPATE, METHOD_INTERP_OVERSHOOT, METHOD_INTERP_ANTICIPATEOVERSHOOT, METHOD_INTERP_BOUNCE, METHOD_INTERP_CYCLE, METHOD_INTERP_FASTOUTLINEARIN, METHOD_INTERP_FASTOUTSLOWIN, METHOD_INTERP_LINEAROUTSLOWIN, METHOD_HEAVISIDE, METHOD_BOXCAR, METHOD_SQUAREWAVE, METHOD_ACCEL_X, METHOD_ACCEL_Y, METHOD_ACCEL_ACCEL_X, METHOD_ACCEL_ACCEL_Y, "abs", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "ceil", "floor", "log", "log2", "log10", "sqrt", "cbrt", "exp", "expm1"};
+class ParserUtils {
+    private  final String SPECIAL_REGEX = "(\\$(\\-?\\w+\\.?\\d*)(=|!=|>|<|<=|>=)(\\-?\\w+\\.?\\d*)(\\|\\||&&)?(\\-?\\w+\\.?\\d*)?(=|!=|>|<|<=|>=)?(\\-?\\w+\\.?\\d*)?(\\|\\||&&)?(\\-?\\w+\\.?\\d*)?(=|!=|>|<|<=|>=)?(\\-?\\w+\\.?\\d*)?\\?([^:\\r\\n]*):([^$\\r\\n]*)\\$)";
+    private  final Pattern mPattern = Pattern.compile(SPECIAL_REGEX);
+    private  final String METHOD_ACCEL_ACCEL_X = "accelerometerRawX";
+    private  final String METHOD_ACCEL_ACCEL_Y = "accelerometerRawY";
+    private  final String METHOD_ACCEL_X = "accelerometerX";
+    private  final String METHOD_ACCEL_Y = "accelerometerY";
+    private  final String METHOD_BOXCAR = "boxcar";
+    private  final String METHOD_CLAMP = "clamp";
+    private  final String METHOD_DEG = "deg";
+    private  final String METHOD_HEAVISIDE = "heaviside";
+    private  final String METHOD_INTERP_ACCEL = "interpAccel";
+    private  final String METHOD_INTERP_ACCELDECEL = "interpAccelDecel";
+    private  final String METHOD_INTERP_ANTICIPATE = "interpAnticipate";
+    private  final String METHOD_INTERP_ANTICIPATEOVERSHOOT = "interpAnticipateOvershoot";
+    private  final String METHOD_INTERP_BOUNCE = "interpBounce";
+    private  final String METHOD_INTERP_CYCLE = "interpCycle";
+    private  final String METHOD_INTERP_DECEL = "interpDecel";
+    private  final String METHOD_INTERP_FASTOUTLINEARIN = "interpFastOutLinearIn";
+    private  final String METHOD_INTERP_FASTOUTSLOWIN = "interpFastOutSlowIn";
+    private  final String METHOD_INTERP_LINEAR = "interpLinear";
+    private  final String METHOD_INTERP_LINEAROUTSLOWIN = "interpLinearOutSlowIn";
+    private  final String METHOD_INTERP_OVERSHOOT = "interpOvershoot";
+    private  final String METHOD_ORBITX = "orbitX";
+    private  final String METHOD_ORBITY = "orbitY";
+    private  final String METHOD_RAD = "rad";
+    private  final String METHOD_RAND = "rand";
+    private  final String METHOD_RAND_STATE = "stRand";
+    private  final String METHOD_RAND_WAKE = "wakeRand";
+    private  final String METHOD_ROUND = "round";
+    private  final String METHOD_SQUAREWAVE = "squareWave";
+    private  final String[] OPERATORS = new String[]{"+", "-", "/", "*"};
+    private  final String PARAM_SEPARATOR = ",";
+    private  final String[] METHOD_LIST = new String[]{METHOD_ROUND, METHOD_RAND, METHOD_RAND_STATE, METHOD_RAND_WAKE, METHOD_RAD, METHOD_DEG, METHOD_CLAMP, METHOD_ORBITX, METHOD_ORBITY, METHOD_INTERP_LINEAR, METHOD_INTERP_ACCEL, METHOD_INTERP_DECEL, METHOD_INTERP_ACCELDECEL, METHOD_INTERP_ANTICIPATE, METHOD_INTERP_OVERSHOOT, METHOD_INTERP_ANTICIPATEOVERSHOOT, METHOD_INTERP_BOUNCE, METHOD_INTERP_CYCLE, METHOD_INTERP_FASTOUTLINEARIN, METHOD_INTERP_FASTOUTSLOWIN, METHOD_INTERP_LINEAROUTSLOWIN, METHOD_HEAVISIDE, METHOD_BOXCAR, METHOD_SQUAREWAVE, METHOD_ACCEL_X, METHOD_ACCEL_Y, METHOD_ACCEL_ACCEL_X, METHOD_ACCEL_ACCEL_Y, "abs", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "ceil", "floor", "log", "log2", "log10", "sqrt", "cbrt", "exp", "expm1"};
 
-    public static String[] getTagOnly(Context context,String tag){
+
+    private Context context;
+    private HashMap<String, String> tagValuesList = new HashMap<>();
+    private String temp;
+
+
+    ParserUtils(Context context, JSONArray watchLayers) {
+        this.context = context;
+        if(tagValuesList == null){
+            tagValuesList = new HashMap<>();
+        }
+        try {
+            for(int i = 0; i<watchLayers.length(); i++) {
+                JSONObject layerJson = watchLayers.getJSONObject(i);
+                switch (layerJson.getString("type")){
+                    case "text":
+                        processLayerTag(layerJson, "opacity");
+                        processLayerTag(layerJson, "r");
+                        processLayerTag(layerJson, "x");
+                        processLayerTag(layerJson, "y");
+                        processLayerTag(layerJson, "text");
+                        processLayerTag(layerJson, "size");
+                        break;
+                    case "dynamic_image":
+                    case "image":
+                        processLayerTag(layerJson, "opacity");
+                        processLayerTag(layerJson, "r");
+                        processLayerTag(layerJson, "x");
+                        processLayerTag(layerJson, "y");
+                        processLayerTag(layerJson, "width");
+                        processLayerTag(layerJson, "height");
+                        break;
+                    case "shape":
+                        processLayerTag(layerJson, "opacity");
+                        processLayerTag(layerJson, "r");
+                        processLayerTag(layerJson, "x");
+                        processLayerTag(layerJson, "y");
+                        processLayerTag(layerJson, "width");
+                        processLayerTag(layerJson, "height");
+                        processLayerTag(layerJson, "radius");
+                        break;
+                }
+            }
+        } catch (JSONException e){
+            e.printStackTrace();
+            e.printStackTrace();
+        }
+    }
+
+
+    void updateTagValues(){
+        for(Map.Entry<String, String> tag:tagValuesList.entrySet()){
+            switch (tag.getKey().charAt(1)){
+                case 'D':
+                    tagValuesList.put(tag.getKey(), processText(context, tag.getKey()));
+                    break;
+                case 'Z':
+                    tagValuesList.put(tag.getKey(), processHealth(tag.getKey()));
+                    break;
+                case 'B':
+                    tagValuesList.put(tag.getKey(), processBattery(context, tag.getKey()));
+                    break;
+                case 'P':
+                    tagValuesList.put(tag.getKey(), processPhone(context, tag.getKey()));
+                    break;
+                case 'W':
+                    tagValuesList.put(tag.getKey(), processWeather(tag.getKey()));
+                    break;
+            }
+        }
+    }
+
+    private void processLayerTag(JSONObject layerJson, String keyName){
+        try {
+            if(layerJson.has(keyName)){
+                Pattern pattern = Pattern.compile("#\\w*#");
+                Matcher matcher = pattern.matcher(layerJson.getString(keyName));
+                matcher.reset(layerJson.getString(keyName));
+                while (matcher.find()) {
+                    if (!tagValuesList.containsKey(matcher.group())) {
+                        tagValuesList.put(matcher.group(), "");
+                    }
+                }
+            }
+        } catch (JSONException e){
+            e.printStackTrace();
+            e.printStackTrace();
+        }
+    }
+
+
+    String getTAGValue(String tag){
+        if (tag != null) {
+            for (int i = 0; i < tag.length() - 1; i++) {
+                if (tag.charAt(i) == '#') {
+                    for (int i2 = i + 1; i2 < tag.length(); i2++) {
+                        if (tag.charAt(i2) == '#') {
+                            this.temp = tag.substring(i, i2 + 1);
+                            break;
+                        }
+                    }
+                    if (tagValuesList.containsKey(temp)) {
+                        tag = tag.replace(temp, Objects.requireNonNull(tagValuesList.get(temp)));
+                    }
+                }
+            }
+            if (!tag.contains("(") && !tag.contains(")") && !tag.contains("$")) {
+                return tag;
+            }
+            try {
+                return processFinal(processText(context,tag));
+            } catch (NumberFormatException e) {
+                return tag;
+            }
+        }
+
+        //if(tagValuesList != null){
+        //   for(String item:getTagOnly(tag)){
+        //       if(tagValuesList.containsKey(item)){
+        //           tag = tag.replace(item, Objects.requireNonNull(tagValuesList.get(item)));
+        //       }
+        //   }
+        //    if (tag.contains("(") && tag.contains(")") && tag.contains("$")) {
+        //        try {
+        //            return TagParser.processFinal(TagParser.processMath(tag));
+        //        } catch (NumberFormatException e) {
+        //            e.printStackTrace();
+        //            return tag;
+        //        }
+        //    }
+        //    return tag;
+        //}
+        return tag;
+    }
+    float getTAGFloatValue(String tag){
+        if (tag == null) {
+            return 0f;
+        }
+        for (int i = 0; i < tag.length() - 1; i++) {
+            if (tag.charAt(i) == '#') {
+                for (int i2 = i + 1; i2 < tag.length(); i2++) {
+                    if (tag.charAt(i2) == '#') {
+                        temp = tag.substring(i, i2 + 1);
+                        break;
+                    }
+                }
+                if(tagValuesList.containsKey(temp)){
+                    tag = tag.replace(temp, Objects.requireNonNull(tagValuesList.get(temp)));
+                }
+            }
+        }
+        if (tag.contains("(") || tag.contains(")") || tag.contains("$")) {
+            try {
+                tag = processFinal(processText(context,tag));
+            } catch (NumberFormatException e) {
+                return 0f;
+            }
+        }
+        try {
+            return Float.parseFloat(tag);
+        } catch (NumberFormatException e2) {
+            return 0.0f;
+        }
+        //if(tagValuesList != null){
+        //    for(String item:getTagOnly(tag)){
+        //        if(tagValuesList.containsKey(item)){
+        //            tag = tag.replace(item, Objects.requireNonNull(tagValuesList.get(item)));
+        //        }
+        //    }
+        //    if (!tag.contains("(") && !tag.contains(")") && !tag.contains("$")) {
+        //        return Float.parseFloat(tag);
+        //    }
+        //    try {
+        //        return Float.parseFloat(TagParser.processFinal(TagParser.processMath(tag)));
+        //    } catch (NumberFormatException e) {
+        //        e.printStackTrace();
+        //        return 0f;
+        //    }
+        //}
+        //return 0f;
+    }
+    private String[] getTagOnly(String tag){
         Pattern pattern = Pattern.compile("#\\w*#");
         Matcher matcher = pattern.matcher(tag);
         matcher.reset(tag);
@@ -87,7 +275,11 @@ public class TagParser {
     }
 
 
-    public static String processWeather(String tag){
+
+
+
+
+    private String processWeather(String tag){
         String clearedTAG = tag.replaceAll("#", "");
         switch (clearedTAG){
             case "WM":
@@ -168,13 +360,13 @@ public class TagParser {
                 return tag.replace(tag, "NNE");
             case "WNDDSS":
                 return tag.replace(tag, "North East");
-                default:
-                    return tag;
+            default:
+                return tag;
         }
     }
 
     //---------- BATTERY ----------
-    public static String processBattery(Context context, String tag) {
+    private String processBattery(Context context, String tag) {
         try {
             Intent batteryStatus = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             assert batteryStatus != null;
@@ -201,8 +393,8 @@ public class TagParser {
                     return String.valueOf((batteryTemp / 10));
                 case "BTIN":
                     return String.valueOf(Math.round((((double) (batteryTemp / 10)) * 1.8d) + 32.0d));
-                    default:
-                        return tag;
+                default:
+                    return tag;
 
             }
         } catch (Exception e){
@@ -214,9 +406,9 @@ public class TagParser {
 
     //---------- MATH ----------
 
-    private static NumberFormat formatter = NumberFormat.getInstance(Locale.getDefault());
+    private NumberFormat formatter = NumberFormat.getInstance(Locale.getDefault());
 
-    private static Function boxcar = new Function(METHOD_BOXCAR, 3) {
+    private Function boxcar = new Function(METHOD_BOXCAR, 3) {
         public double apply(double... args) {
             if (args == null || args.length < 3) {
                 return 0d;
@@ -225,7 +417,7 @@ public class TagParser {
             return heaviside(current - args[1]) - heaviside(current - args[2]);
         }
     };
-    private static Function clamp = new Function(METHOD_CLAMP, 3) {
+    private  Function clamp = new Function(METHOD_CLAMP, 3) {
         public double apply(double... args) {
             if (args == null || args.length < 3) {
                 return 0d;
@@ -233,12 +425,12 @@ public class TagParser {
             return MathUtils.clamp(args[0], args[1], args[2]);
         }
     };
-    private static Function deg = new Function(METHOD_DEG) {
+    private  Function deg = new Function(METHOD_DEG) {
         public double apply(double... doubles) {
             return Math.toDegrees(doubles[0]);
         }
     };
-    private static Function heaviside = new Function(METHOD_HEAVISIDE) {
+    private  Function heaviside = new Function(METHOD_HEAVISIDE) {
         public double apply(double... args) {
             if (args == null || args.length < 1) {
                 return 0d;
@@ -246,7 +438,7 @@ public class TagParser {
             return heaviside(args[0]);
         }
     };
-    private static Function interpAccel = new Function(METHOD_INTERP_ACCEL, 4) {
+    private  Function interpAccel = new Function(METHOD_INTERP_ACCEL, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -254,14 +446,14 @@ public class TagParser {
             return calculateInterpolation(new AccelerateInterpolator((float) args[3]), args);
         }
     };
-    private static Function interpAccelDecel = new Function(METHOD_INTERP_ACCELDECEL, 3) {
+    private  Function interpAccelDecel = new Function(METHOD_INTERP_ACCELDECEL, 3) {
         private final Interpolator interpolator = new AccelerateDecelerateInterpolator();
 
         public double apply(double... args) {
             return calculateInterpolation(this.interpolator, args);
         }
     };
-    private static Function interpAnticipate = new Function(METHOD_INTERP_ANTICIPATE, 4) {
+    private  Function interpAnticipate = new Function(METHOD_INTERP_ANTICIPATE, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -269,7 +461,7 @@ public class TagParser {
             return calculateInterpolation(new AnticipateInterpolator((float) args[3]), args);
         }
     };
-    private static Function interpAnticipateOvershoot = new Function(METHOD_INTERP_ANTICIPATEOVERSHOOT, 4) {
+    private  Function interpAnticipateOvershoot = new Function(METHOD_INTERP_ANTICIPATEOVERSHOOT, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -277,14 +469,14 @@ public class TagParser {
             return calculateInterpolation(new AnticipateOvershootInterpolator((float) args[3]), args);
         }
     };
-    private static Function interpBounce = new Function(METHOD_INTERP_BOUNCE, 3) {
+    private  Function interpBounce = new Function(METHOD_INTERP_BOUNCE, 3) {
         private final Interpolator interpolator = new BounceInterpolator();
 
         public double apply(double... args) {
             return calculateInterpolation(this.interpolator, args);
         }
     };
-    private static Function interpCycle = new Function(METHOD_INTERP_CYCLE, 4) {
+    private  Function interpCycle = new Function(METHOD_INTERP_CYCLE, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -292,7 +484,7 @@ public class TagParser {
             return calculateInterpolation(new CycleInterpolator((float) args[3]), args);
         }
     };
-    private static Function interpDecel = new Function(METHOD_INTERP_DECEL, 4) {
+    private  Function interpDecel = new Function(METHOD_INTERP_DECEL, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -300,35 +492,35 @@ public class TagParser {
             return calculateInterpolation(new DecelerateInterpolator((float) args[3]), args);
         }
     };
-    private static Function interpFastOutLinearIn = new Function(METHOD_INTERP_FASTOUTLINEARIN, 3) {
+    private  Function interpFastOutLinearIn = new Function(METHOD_INTERP_FASTOUTLINEARIN, 3) {
         private final Interpolator interpolator = new FastOutLinearInInterpolator();
 
         public double apply(double... args) {
             return calculateInterpolation(this.interpolator, args);
         }
     };
-    private static Function interpFastOutSlowIn = new Function(METHOD_INTERP_FASTOUTSLOWIN, 3) {
+    private  Function interpFastOutSlowIn = new Function(METHOD_INTERP_FASTOUTSLOWIN, 3) {
         private final Interpolator interpolator = new FastOutSlowInInterpolator();
 
         public double apply(double... args) {
             return calculateInterpolation(this.interpolator, args);
         }
     };
-    private static Function interpLinear = new Function(METHOD_INTERP_LINEAR, 3) {
+    private  Function interpLinear = new Function(METHOD_INTERP_LINEAR, 3) {
         private final Interpolator interpolator = new LinearInterpolator();
 
         public double apply(double... args) {
             return calculateInterpolation(this.interpolator, args);
         }
     };
-    private static Function interpLinearOutSlowIn = new Function(METHOD_INTERP_LINEAROUTSLOWIN, 4) {
+    private  Function interpLinearOutSlowIn = new Function(METHOD_INTERP_LINEAROUTSLOWIN, 4) {
         private final Interpolator interpolator = new LinearOutSlowInInterpolator();
 
         public double apply(double... args) {
             return calculateInterpolation(this.interpolator, args);
         }
     };
-    private static Function interpOvershoot = new Function(METHOD_INTERP_OVERSHOOT, 4) {
+    private  Function interpOvershoot = new Function(METHOD_INTERP_OVERSHOOT, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -336,7 +528,7 @@ public class TagParser {
             return calculateInterpolation(new OvershootInterpolator((float) args[3]), args);
         }
     };
-    private static Function orbitX = new Function(METHOD_ORBITX, 2) {
+    private  Function orbitX = new Function(METHOD_ORBITX, 2) {
         public double apply(double... args) {
             if (args == null || args.length < 2) {
                 return 0d;
@@ -345,7 +537,7 @@ public class TagParser {
             return Math.cos(theta) * args[1];
         }
     };
-    private static Function orbitY = new Function(METHOD_ORBITY, 2) {
+    private  Function orbitY = new Function(METHOD_ORBITY, 2) {
         public double apply(double... args) {
             if (args == null || args.length < 2) {
                 return 0d;
@@ -354,12 +546,12 @@ public class TagParser {
             return Math.sin(theta) * args[1];
         }
     };
-    private static Function rad = new Function(METHOD_RAD) {
+    private  Function rad = new Function(METHOD_RAD) {
         public double apply(double... doubles) {
             return Math.toRadians(doubles[0]);
         }
     };
-    private static Function rand = new Function(METHOD_RAND, 2) {
+    private  Function rand = new Function(METHOD_RAND, 2) {
         public double apply(double... args) {
             if (args.length < 2) {
                 return 0d;
@@ -369,12 +561,12 @@ public class TagParser {
             return (double) Math.round((Math.random() * Math.abs(upper - lower)) + lower);
         }
     };
-    private static Function round = new Function(METHOD_ROUND) {
+    private  Function round = new Function(METHOD_ROUND) {
         public double apply(double... args) {
             return (double) Math.round(args[0]);
         }
     };
-    private static Function squareWave = new Function(METHOD_SQUAREWAVE, 4) {
+    private  Function squareWave = new Function(METHOD_SQUAREWAVE, 4) {
         public double apply(double... args) {
             if (args == null || args.length < 4) {
                 return 0d;
@@ -384,17 +576,71 @@ public class TagParser {
         }
     };
 
-    static {
+     {
         formatter.setMaximumFractionDigits(15);
         formatter.setMinimumIntegerDigits(1);
         formatter.setGroupingUsed(false);
     }
 
-    public static String processMath(String string) {
+    String processMath2(String string) {
         return parseEquations(parseMethods(string));
     }
 
-    private static String parseMethods(String evaluatable) {
+
+    String processMath(String tag){
+        int openBr = 0;
+        int start = 0;
+        int i = 0;
+        while (i < tag.length()) {
+            if (tag.charAt(i) == '(' || tag.charAt(i) == '[') {
+                if (openBr == 0) {
+                    start = i;
+                }
+                openBr++;
+            } else if (tag.charAt(i) == ')' || tag.charAt(i) == ']') {
+                openBr--;
+                if (openBr == 0) {
+                    tag = tag.replace(tag.substring(start, i + 1), eval(tag.substring(start, i + 1)));
+                }
+            }
+            i++;
+        }
+        return tag;
+    }
+    private  String eval(String text) {
+        try {
+            String result = new ExpressionBuilder(text).variables("pi", "e").functions(
+                    round,
+                    rand,
+                    rad,
+                    deg,
+                    clamp,
+                    orbitX,
+                    orbitY,
+                    interpLinear,
+                    interpAccel,
+                    interpDecel,
+                    interpAccelDecel,
+                    interpAnticipate,
+                    interpOvershoot,
+                    interpAnticipateOvershoot,
+                    interpBounce,
+                    interpCycle,
+                    interpFastOutLinearIn,
+                    interpFastOutSlowIn,
+                    interpLinearOutSlowIn,
+                    heaviside,
+                    boxcar,
+                    squareWave).build().setVariable("pi", 3.141592653589793d).setVariable("e", 2.718281828459045d).evaluate() + "";
+            return result.endsWith(".0") ? result.substring(0, result.length() - 2) : result;
+        } catch (IllegalArgumentException e) {
+            return "0";
+        } catch (EmptyStackException e2) {
+            e2.printStackTrace();
+            return "0";
+        }
+    }
+    private  String parseMethods(String evaluatable) {
         if (evaluatable == null || evaluatable.trim().length() <= 0) {
             return null;
         }
@@ -460,7 +706,7 @@ public class TagParser {
         } while (latestIndex >= 0);
         return output;
     }
-    public static String parseEquations(String evaluatable) {
+    private String parseEquations(String evaluatable) {
         if (evaluatable == null || evaluatable.trim().length() <= 0) {
             return null;
         }
@@ -493,7 +739,7 @@ public class TagParser {
 
 
 
-    protected static double calculateInterpolation(Interpolator interpolator, double... args) {
+    private double calculateInterpolation(Interpolator interpolator, double... args) {
         if (interpolator == null || args == null || args.length < 3) {
             return 0d;
         }
@@ -502,36 +748,36 @@ public class TagParser {
         float interpValue = 0.0f;
         double range = Math.max(args[1], args[2]) - min;
         if (Double.doubleToRawLongBits(range) != 0) {
-            interpValue = (float) MathUtils.clamp((current - min) / range, (double) 0d, 1.0d);
+            interpValue = (float) MathUtils.clamp((current - min) / range, 0d, 1.0d);
         }
         return (double) interpolator.getInterpolation(interpValue);
     }
 
-    protected static double heaviside(double input) {
+    private double heaviside(double input) {
         return 0.5d * (1.0d - Math.signum(input));
     }
 
-    private static String eval(String text) {
-        try {
-            String result = formatter.format(new ExpressionBuilder(text).variables("pi", "e").functions(round, rand, rad, deg, clamp, orbitX, orbitY, interpLinear, interpAccel, interpDecel, interpAccelDecel, interpAnticipate, interpOvershoot, interpAnticipateOvershoot, interpBounce, interpCycle, interpFastOutLinearIn, interpFastOutSlowIn, interpLinearOutSlowIn, heaviside, boxcar, squareWave).build().setVariable("pi", 3.141592653589793d).setVariable("e", 2.718281828459045d).evaluate());
-            return result.endsWith(".0") ? result.substring(0, result.length() - 2) : result;
-        } catch (IllegalArgumentException e) {
-            return "0";
-        } catch (EmptyStackException e2) {
-            e2.printStackTrace();
-            return "0";
-        }
-    }
+    //private  String eval(String text) {
+    //    try {
+    //        String result = formatter.format(new ExpressionBuilder(text).variables("pi", "e").functions(round, rand, rad, deg, clamp, orbitX, orbitY, interpLinear, interpAccel, interpDecel, interpAccelDecel, interpAnticipate, interpOvershoot, interpAnticipateOvershoot, interpBounce, interpCycle, interpFastOutLinearIn, interpFastOutSlowIn, interpLinearOutSlowIn, heaviside, boxcar, squareWave).build().setVariable("pi", 3.141592653589793d).setVariable("e", 2.718281828459045d).evaluate());
+    //        return result.endsWith(".0") ? result.substring(0, result.length() - 2) : result;
+    //    } catch (IllegalArgumentException e) {
+    //        return "0";
+    //    } catch (EmptyStackException e2) {
+    //        e2.printStackTrace();
+    //        return "0";
+    //    }
+    //}
 
     //-------------------------
 
     //---------- PHONE ----------
     //"PBP" return phone battery level percentage (redundant, cause cannot get phone status)
     //"PBN" return phone battery level (redundant, cause cannot get phone status)
-    public static String processPhone(Context context, String tag){
+    private String processPhone(Context context, String tag){
         try {
             if(tag.replaceAll("#", "").equals("PWL")){
-                return String.valueOf(WifiManager.calculateSignalLevel(((WifiManager) context.getSystemService(Context.WIFI_SERVICE)).getConnectionInfo().getRssi(), 4));
+                return String.valueOf(WifiManager.calculateSignalLevel(((WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE)).getConnectionInfo().getRssi(), 4));
             } else {
                 return tag;
             }
@@ -542,13 +788,13 @@ public class TagParser {
     //-------------------------
 
     //---------- TIME ----------
-    public static String processTime(Context context, String tag){
+    private String processTime(Context context, String tag){
         String[] hours = context.getResources().getStringArray(R.array.watchface_text_hours);
         String[] major = context.getResources().getStringArray(R.array.watchface_text_minutes_major);
         String clearedTAG = tag.replaceAll("#", "");
         switch (clearedTAG){
             case "DWE": //Time elapsed since last watch face view (in seconds with 0.01 parts)
-                return Double.toString(((double) java.lang.System.currentTimeMillis()) / 1000.0d);
+                return Double.toString(((double) java.lang.System.currentTimeMillis()) / 1000.0d).substring(0,5);
             case "DNOW": //Current timestamp
             case "DSYNC": //Timestamp at which watch face was synced
                 long timestamp = java.lang.System.currentTimeMillis()/1000;
@@ -743,11 +989,11 @@ public class TagParser {
             case "Dzzzz":
                 return tag.replace(tag, getDateForFormat("zzzz"));
             case "DWR":
-                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_WEEK))) * ((float) (Integer.parseInt(getDateForFormat("s"))))));
+                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_WEEK))) * ((float) (Integer.parseInt(getDateForFormat("F"))))));
             case "DMR":
-                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH))) * ((float) Integer.parseInt(getDateForFormat("d")))));
+                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH))) * ((float) Integer.parseInt(getDateForFormat("M")))));
             case "DYR":
-                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_YEAR))) * ((float) (Integer.parseInt(getDateForFormat("D"))))));
+                return tag.replace(tag, String.valueOf((360.0f / ((float) Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_YEAR))) * ((float) (Integer.parseInt(getDateForFormat("Y"))))));
             case "DMYR":
                 return tag.replace(tag, String.valueOf((Integer.parseInt(getDateForFormat("M"))) * 30));
             case "DUh":
@@ -772,12 +1018,12 @@ public class TagParser {
                         return tag.replace(tag, getUTCDateForFormat("h"));
                     }
                 }
-                default:
-                    return tag;
+            default:
+                return tag;
         }
     }
     @SuppressLint("WrongConstant")
-    private static String getDateForFormat(String formatString) {
+    private  String getDateForFormat(String formatString) {
         if (formatString == null) {
             return "";
         }
@@ -787,7 +1033,7 @@ public class TagParser {
         format.setCalendar(calendar);
         return format.format(calendar.getTime());
     }
-    private static String getUTCDateForFormat(String formatString) {
+    private  String getUTCDateForFormat(String formatString) {
         if (formatString == null) {
             return "";
         }
@@ -802,7 +1048,7 @@ public class TagParser {
     //-------------------------
 
     //---------- TEXT ----------
-    public static String processText(Context context, String text){
+    private String processText(Context context, String text){
         Pattern pattern = Pattern.compile("#\\w*#");
         Matcher matcher = pattern.matcher(text);
         matcher.reset(text);
@@ -826,18 +1072,18 @@ public class TagParser {
                     text =  text.replace(tempString, processPhone(context,tempString));
                 case 'W':
                 case 'w':
-                    text =  text.replace(tempString, processWeather(tempString)); //WeatherParser
+                    text =  text.replace(tempString, processWeather(tempString));
             }
         }
         if (text.contains("(") || text.contains(")") || text.contains("$")) {
-            return processFinal(processMath(text));
+            return processFinal(processMath2(text));
         }
         return text;
     }
     //-------------------------
 
     //---------- HEALTH ----------
-    public static String processHealth(String tag){
+    private String processHealth(String tag){
         int stepCount = 1002;
         int avgHeartRate = 89;
         String clearTAG = tag.replaceAll("#", "");
@@ -852,7 +1098,7 @@ public class TagParser {
     //-------------------------
 
     //---------- FINAL ------------
-    public static String processFinal(String string) {
+    private String processFinal(String string) {
         Matcher mMatcher = mPattern.matcher(string);
         while (mMatcher.find()) {
             String group1;
@@ -860,108 +1106,120 @@ public class TagParser {
             boolean mMatch1 = false;
             boolean mMatch2 = false;
             boolean mMatch3 = false;
-            if (mMatcher.group(3).matches("=")) {
+            if (Objects.requireNonNull(mMatcher.group(3)).matches("=")) {
                 group1 = mMatcher.group(2);
                 group2 = mMatcher.group(4);
+                assert group1 != null;
                 if (group1.endsWith(".0")) {
                     group1 = group1.substring(0, group1.length() - 2);
                 }
+                assert group2 != null;
                 if (group2.endsWith(".0")) {
                     group2 = group2.substring(0, group2.length() - 2);
                 }
                 mMatch1 = group1.matches(group2);
-            } else if (mMatcher.group(3).matches("!=")) {
-                mMatch1 = !mMatcher.group(2).matches(mMatcher.group(4));
-            } else if (mMatcher.group(3).matches("<")) {
-                mMatch1 = Float.parseFloat(mMatcher.group(2)) < Float.parseFloat(mMatcher.group(4));
-            } else if (mMatcher.group(3).matches(">")) {
-                mMatch1 = Float.parseFloat(mMatcher.group(2)) > Float.parseFloat(mMatcher.group(4));
-            } else if (mMatcher.group(3).matches(">=")) {
-                mMatch1 = Float.parseFloat(mMatcher.group(2)) >= Float.parseFloat(mMatcher.group(4));
-            } else if (mMatcher.group(3).matches("<=")) {
-                mMatch1 = Float.parseFloat(mMatcher.group(2)) <= Float.parseFloat(mMatcher.group(4));
+            } else if (Objects.requireNonNull(mMatcher.group(3)).matches("!=")) {
+                mMatch1 = !Objects.requireNonNull(mMatcher.group(2)).matches(Objects.requireNonNull(mMatcher.group(4)));
+            } else if (Objects.requireNonNull(mMatcher.group(3)).matches("<")) {
+                mMatch1 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(2))) < Float.parseFloat(Objects.requireNonNull(mMatcher.group(4)));
+            } else if (Objects.requireNonNull(mMatcher.group(3)).matches(">")) {
+                mMatch1 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(2))) > Float.parseFloat(Objects.requireNonNull(mMatcher.group(4)));
+            } else if (Objects.requireNonNull(mMatcher.group(3)).matches(">=")) {
+                mMatch1 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(2))) >= Float.parseFloat(Objects.requireNonNull(mMatcher.group(4)));
+            } else if (Objects.requireNonNull(mMatcher.group(3)).matches("<=")) {
+                mMatch1 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(2))) <= Float.parseFloat(Objects.requireNonNull(mMatcher.group(4)));
             }
             if (!(mMatcher.group(5) == null || mMatcher.group(6) == null || mMatcher.group(7) == null || mMatcher.group(8) == null)) {
-                if (mMatcher.group(7).matches("=")) {
+                if (Objects.requireNonNull(mMatcher.group(7)).matches("=")) {
                     group1 = mMatcher.group(6);
                     group2 = mMatcher.group(8);
+                    assert group1 != null;
                     if (group1.endsWith(".0")) {
                         group1 = group1.substring(0, group1.length() - 2);
                     }
+                    assert group2 != null;
                     if (group2.endsWith(".0")) {
                         group2 = group2.substring(0, group2.length() - 2);
                     }
                     mMatch2 = group1.matches(group2);
-                } else if (mMatcher.group(7).matches("!=")) {
-                    mMatch2 = !mMatcher.group(6).matches(mMatcher.group(8));
-                } else if (mMatcher.group(7).matches("<")) {
-                    mMatch2 = Float.parseFloat(mMatcher.group(6)) < Float.parseFloat(mMatcher.group(8));
-                } else if (mMatcher.group(7).matches(">")) {
-                    mMatch2 = Float.parseFloat(mMatcher.group(6)) > Float.parseFloat(mMatcher.group(8));
-                } else if (mMatcher.group(7).matches(">=")) {
-                    mMatch2 = Float.parseFloat(mMatcher.group(6)) >= Float.parseFloat(mMatcher.group(8));
-                } else if (mMatcher.group(7).matches("<=")) {
-                    mMatch2 = Float.parseFloat(mMatcher.group(6)) <= Float.parseFloat(mMatcher.group(8));
+                } else if (Objects.requireNonNull(mMatcher.group(7)).matches("!=")) {
+                    mMatch2 = !Objects.requireNonNull(mMatcher.group(6)).matches(Objects.requireNonNull(mMatcher.group(8)));
+                } else if (Objects.requireNonNull(mMatcher.group(7)).matches("<")) {
+                    mMatch2 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(6))) < Float.parseFloat(Objects.requireNonNull(mMatcher.group(8)));
+                } else if (Objects.requireNonNull(mMatcher.group(7)).matches(">")) {
+                    mMatch2 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(6))) > Float.parseFloat(Objects.requireNonNull(mMatcher.group(8)));
+                } else if (Objects.requireNonNull(mMatcher.group(7)).matches(">=")) {
+                    mMatch2 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(6))) >= Float.parseFloat(Objects.requireNonNull(mMatcher.group(8)));
+                } else if (Objects.requireNonNull(mMatcher.group(7)).matches("<=")) {
+                    mMatch2 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(6))) <= Float.parseFloat(Objects.requireNonNull(mMatcher.group(8)));
                 }
             }
             if (!(mMatcher.group(9) == null || mMatcher.group(10) == null || mMatcher.group(11) == null || mMatcher.group(12) == null)) {
-                if (mMatcher.group(11).matches("=")) {
+                if (Objects.requireNonNull(mMatcher.group(11)).matches("=")) {
                     group1 = mMatcher.group(10);
                     group2 = mMatcher.group(12);
+                    assert group1 != null;
                     if (group1.endsWith(".0")) {
                         group1 = group1.substring(0, group1.length() - 2);
                     }
+                    assert group2 != null;
                     if (group2.endsWith(".0")) {
                         group2 = group2.substring(0, group2.length() - 2);
                     }
                     mMatch3 = group1.matches(group2);
-                } else if (mMatcher.group(11).matches("!=")) {
-                    mMatch3 = !mMatcher.group(10).matches(mMatcher.group(12));
-                } else if (mMatcher.group(11).matches("<")) {
-                    mMatch3 = Float.parseFloat(mMatcher.group(10)) < Float.parseFloat(mMatcher.group(12));
-                } else if (mMatcher.group(11).matches(">")) {
-                    mMatch3 = Float.parseFloat(mMatcher.group(10)) > Float.parseFloat(mMatcher.group(12));
-                } else if (mMatcher.group(11).matches(">=")) {
-                    mMatch3 = Float.parseFloat(mMatcher.group(10)) >= Float.parseFloat(mMatcher.group(12));
-                } else if (mMatcher.group(11).matches("<=")) {
-                    mMatch3 = Float.parseFloat(mMatcher.group(10)) <= Float.parseFloat(mMatcher.group(12));
+                } else if (Objects.requireNonNull(mMatcher.group(11)).matches("!=")) {
+                    mMatch3 = !Objects.requireNonNull(mMatcher.group(10)).matches(Objects.requireNonNull(mMatcher.group(12)));
+                } else if (Objects.requireNonNull(mMatcher.group(11)).matches("<")) {
+                    mMatch3 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(10))) < Float.parseFloat(Objects.requireNonNull(mMatcher.group(12)));
+                } else if (Objects.requireNonNull(mMatcher.group(11)).matches(">")) {
+                    mMatch3 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(10))) > Float.parseFloat(Objects.requireNonNull(mMatcher.group(12)));
+                } else if (Objects.requireNonNull(mMatcher.group(11)).matches(">=")) {
+                    mMatch3 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(10))) >= Float.parseFloat(Objects.requireNonNull(mMatcher.group(12)));
+                } else if (Objects.requireNonNull(mMatcher.group(11)).matches("<=")) {
+                    mMatch3 = Float.parseFloat(Objects.requireNonNull(mMatcher.group(10))) <= Float.parseFloat(Objects.requireNonNull(mMatcher.group(12)));
                 }
             }
             boolean mMatchA = false;
             if (mMatcher.group(5) != null) {
-                if (mMatcher.group(5).matches("\\|\\|")) {
+                if (Objects.requireNonNull(mMatcher.group(5)).matches("\\|\\|")) {
                     mMatchA = mMatch1 || mMatch2;
-                } else if (mMatcher.group(5).matches("&&")) {
+                } else if (Objects.requireNonNull(mMatcher.group(5)).matches("&&")) {
                     mMatchA = mMatch1 && mMatch2;
                 }
             }
             if (mMatcher.group(9) != null) {
-                if (mMatcher.group(9).matches("\\|\\|")) {
+                if (Objects.requireNonNull(mMatcher.group(9)).matches("\\|\\|")) {
                     if (mMatchA || mMatch3) {
-                        string = string.replace(mMatcher.group(), mMatcher.group(13));
+                        string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(13)));
                     } else {
-                        string = string.replace(mMatcher.group(), mMatcher.group(14));
+                        string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(14)));
                     }
-                } else if (mMatcher.group(9).matches("&&")) {
+                } else if (Objects.requireNonNull(mMatcher.group(9)).matches("&&")) {
                     if (mMatchA && mMatch3) {
-                        string = string.replace(mMatcher.group(), mMatcher.group(13));
+                        string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(13)));
                     } else {
-                        string = string.replace(mMatcher.group(), mMatcher.group(14));
+                        string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(14)));
                     }
                 }
             } else if (mMatcher.group(5) != null) {
                 if (mMatchA) {
-                    string = string.replace(mMatcher.group(), mMatcher.group(13));
+                    string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(13)));
                 } else {
-                    string = string.replace(mMatcher.group(), mMatcher.group(14));
+                    string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(14)));
                 }
             } else if (mMatch1) {
-                string = string.replace(mMatcher.group(), mMatcher.group(13));
+                string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(13)));
             } else {
-                string = string.replace(mMatcher.group(), mMatcher.group(14));
+                string = string.replace(mMatcher.group(), Objects.requireNonNull(mMatcher.group(14)));
             }
         }
         return string;
     }
 
+
+
+
+
+
+    
 }

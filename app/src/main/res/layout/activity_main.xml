@@ -6,6 +6,8 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -15,6 +17,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center">
+
+
             <com.liner.facerengineview.Engine.RenderFacerView
                 android:id="@+id/renderFacer"
                 android:layout_width="match_parent"
@@ -22,6 +26,18 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/faceName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="FACE NAME"
+                android:gravity="center"
+                android:textSize="25sp"
+                android:textColor="#000"
+                android:textStyle="bold"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"/>
 
             <LinearLayout
                 android:id="@+id/linearLayout2"
@@ -61,13 +77,19 @@
                     android:id="@+id/switchAmbient"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Switch ambient" />
+                    android:text="Ambient" />
 
                 <Button
                     android:id="@+id/switchMode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mode (Square|Round)" />
+                    android:text="Mode" />
+
+                <Button
+                    android:id="@+id/makeDrawCall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Make 1 draw all" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"

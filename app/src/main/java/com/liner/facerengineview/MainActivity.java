@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,7 +21,8 @@ import java.io.File;
 public class MainActivity extends AppCompatActivity {
     private PreferenceManager preferenceManager;
     private RenderFacerView facerView;
-    private Button selectFace, startDraw, stopDraw, switchAmbient, switchMode;
+    private Button selectFace, startDraw, stopDraw, switchAmbient, switchMode, makeDrawCall;
+    private TextView faceName;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
         stopDraw = findViewById(R.id.stopDraw);
         switchAmbient = findViewById(R.id.switchAmbient);
         switchMode = findViewById(R.id.switchMode);
+        makeDrawCall = findViewById(R.id.makeDrawCall);
+        faceName = findViewById(R.id.faceName);
         selectFace.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -56,7 +60,9 @@ public class MainActivity extends AppCompatActivity {
                         if(files.length != 0) {
                             final File faceFile = new File(files[0]);
                             facerView.init(faceFile);
-                            facerView.startDraw(10);
+                            faceName.setText(faceFile.getName());
+                            facerView.makeDrawCall();
+                            //facerView.startDraw(10);
                         }
                     }
                 });
@@ -86,6 +92,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 facerView.setRoundWatch(!facerView.isRoundWatch());
+            }
+        });
+        makeDrawCall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                facerView.makeDrawCall();
             }
         });
     }

@@ -18,7 +18,6 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import com.liner.facerengineview.Engine.Util.Parser.LowMemoryParser;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,7 +50,8 @@ public class RenderFacerView extends View implements Runnable {
     private ArrayList<HashMap<String, String>> watchFaceLayers;
     private HashMap<String, BitmapDrawable> drawableHashMap;
     private HashMap<String, Typeface> typefaceHashMap;
-    private LowMemoryParser lowMemoryParser;
+    //private LowMemoryParser lowMemoryParser;
+    private ParserUtils parserUtils;
     private Thread mThread;
     private boolean isRunning = false;
     private int UPDATE_FREQ = 50;
@@ -99,7 +99,8 @@ public class RenderFacerView extends View implements Runnable {
                 } else {
                     watchFace = new JSONArray(manifest);
                 }
-                lowMemoryParser = new LowMemoryParser(context, watchFace);
+                //lowMemoryParser = new LowMemoryParser(context, watchFace);
+                parserUtils = new ParserUtils(context, watchFace);
                 watchFaceLayers.clear();
                 drawableHashMap.clear();
                 typefaceHashMap.clear();
@@ -190,8 +191,10 @@ public class RenderFacerView extends View implements Runnable {
         }
         canvas.drawColor(Color.parseColor("#ff000000"));
         canvasPaint.reset();
-        if(lowMemoryParser != null){
-            lowMemoryParser.updateData();
+        //if(lowMemoryParser != null){
+        if(parserUtils != null){
+            parserUtils.updateTagValues();
+            //lowMemoryParser.updateData();
             if(watchFaceLayers.size() != 0){
                 for(HashMap<String, String> layerData: watchFaceLayers){
                     if(layerData.containsKey("type")){
@@ -220,18 +223,20 @@ public class RenderFacerView extends View implements Runnable {
     public void run() {
         while (isRunning) {
             try {
-                lowMemoryParser.updateData();
+                //lowMemoryParser.updateData();
+                parserUtils.updateTagValues();
                 postInvalidate();
-                if(isLowPower){
-                    Thread.sleep(5000);
-                } else {
-                    Thread.sleep(UPDATE_FREQ);
-                }
+                Thread.sleep(UPDATE_FREQ);
             } catch (InterruptedException localInterruptedException) {
                 localInterruptedException.printStackTrace();
             }
         }
     }
+
+    public void makeDrawCall(){
+        invalidate();
+    }
+
     public void startDraw(){
         isRunning = true;
         if(mThread != null && mThread.isAlive()){
@@ -274,14 +279,16 @@ public class RenderFacerView extends View implements Runnable {
         String text;
         canvasPaint.reset();
         try {
-            alpha = Math.round(2.55d * lowMemoryParser.parseFloat(layerData.get("opacity")));
+            //alpha = Math.round(2.55d * lowMemoryParser.parseFloat(layerData.get("opacity")));
+            alpha = Math.round(2.55d * parserUtils.getTAGFloatValue(layerData.get("opacity")));
         } catch (NumberFormatException e){
             alpha = 255f;
         }
         if(alpha != 0f){
             Typeface typeface;
             if(layerData.containsKey("text")){
-                text = lowMemoryParser.parse(layerData.get("text"));
+                //text = lowMemoryParser.parse(layerData.get("text"));
+                text = parserUtils.getTAGValue(layerData.get("text"));
             } else {
                 text = "_ERR_";
             }
@@ -307,7 +314,7 @@ public class RenderFacerView extends View implements Runnable {
             }
             if(layerData.containsKey("text_effect")){
                 shouldStroke = false;
-                strokeColor = Color.BLACK;
+                strokeColor = Color.WHITE;
                 canvasPaint.clearShadowLayer();
                 switch (Integer.valueOf(layerData.get("text_effect"))){
                     case 1:
@@ -332,12 +339,13 @@ public class RenderFacerView extends View implements Runnable {
                 }
             } else {
                 shouldStroke = false;
-                strokeColor = Color.BLACK;
+                strokeColor = Color.WHITE;
                 canvasPaint.clearShadowLayer();
             }
             if(layerData.containsKey("size")){
                 try {
-                    canvasPaint.setTextSize(renderScale*lowMemoryParser.parseFloat(layerData.get("size")));
+                    //canvasPaint.setTextSize(renderScale*lowMemoryParser.parseFloat(layerData.get("size")));
+                    canvasPaint.setTextSize(renderScale*parserUtils.getTAGFloatValue(layerData.get("size")));
                 } catch (NumberFormatException e){
                     canvasPaint.setTextSize(1);
                 }
@@ -369,7 +377,8 @@ public class RenderFacerView extends View implements Runnable {
             }
             if(layerData.containsKey("r")){
                 canvas.save();
-                canvas.rotate(lowMemoryParser.parseFloat(layerData.get("r")), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale));
+                //canvas.rotate(lowMemoryParser.parseFloat(layerData.get("r")), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale));
+                canvas.rotate(parserUtils.getTAGFloatValue(layerData.get("r")), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale));
             }
             canvasPaint.setAntiAlias(true);
             if(shouldStroke){
@@ -378,24 +387,28 @@ public class RenderFacerView extends View implements Runnable {
                 if(isLowPower){
                     if(layerData.containsKey("low_power")){
                         if (Boolean.valueOf(layerData.get("low_power"))) {
-                            canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                            //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                            canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
                             canvasPaint.setStyle(Paint.Style.FILL);
                             canvasPaint.setColor(Color.BLACK);
                         }
                     }
                 } else {
-                    canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                    //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                    canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
                 }
             } else {
                 if (isLowPower) {
                     if (layerData.containsKey("low_power")) {
                         if (Boolean.valueOf(layerData.get("low_power"))) {
-                            canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                            //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                            canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
                         }
                     }
                 }
                 if (!isLowPower) {
-                    canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                    //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
+                    canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
                 }
             }
             canvas.restore();
@@ -415,7 +428,8 @@ public class RenderFacerView extends View implements Runnable {
         canvasPaint.reset();
         canvasPaint.setAntiAlias(true);
         try {
-            alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
+            //alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
+            alpha = parserUtils.getTAGFloatValue(layerData.get("opacity"));
         } catch (NumberFormatException e6) {
             alpha = 100.0f;
         }
@@ -423,11 +437,16 @@ public class RenderFacerView extends View implements Runnable {
         if (alpha != 0.0f) {
             if (layerData.containsKey("hash")) {
                 mBitmap = drawableHashMap.get(layerData.get("hash"));
-                int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
-                int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
-                int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
-                int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
-                float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                //int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
+                //int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
+                //int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
+                //int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
+                //float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                int tempX = Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale);
+                int tempY = Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
+                int tempWidth = Math.round(parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale);
+                int tempHeight = Math.round(parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale);
+                float tempR = parserUtils.getTAGFloatValue(layerData.get("r"));
                 int tmpOffset;
                 try {
                     tmpOffset = Integer.valueOf(layerData.get("alignment"));
@@ -528,7 +547,8 @@ public class RenderFacerView extends View implements Runnable {
         canvasPaint.reset();
         canvasPaint.setAntiAlias(true);
         try {
-            alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
+            //alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
+            alpha = parserUtils.getTAGFloatValue(layerData.get("opacity"));
         } catch (NumberFormatException e6) {
             alpha = 100.0f;
         }
@@ -553,13 +573,18 @@ public class RenderFacerView extends View implements Runnable {
                     }
                 }
                 mBitmap = drawableHashMap.get(hash);
-                int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
-                int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
-                int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
-                int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
+                //int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
+                //int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
+                //int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
+                //int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
+                int tempX = Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale);
+                int tempY = Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
+                int tempWidth = Math.round(parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale);
+                int tempHeight = Math.round(parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale);
                 float tempR;
                 try {
-                    tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                    //tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                    tempR = parserUtils.getTAGFloatValue(layerData.get("r"));
                 } catch (NumberFormatException e){
                     tempR = 0f;
                 }
@@ -660,9 +685,12 @@ public class RenderFacerView extends View implements Runnable {
                 int height = 90;
                 int radius = 0;
                 boolean shouldClip = false;
-                int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
-                int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
-                float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                //int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
+                //int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
+                //float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
+                int tempX = Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale);
+                int tempY = Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
+                float tempR = parserUtils.getTAGFloatValue(layerData.get("r"));
                 int sides = Integer.parseInt(layerData.get("sides"));
                 if(layerData.containsKey("color")){
                     canvasPaint.setColor(Integer.parseInt(layerData.get("color")));
@@ -676,7 +704,8 @@ public class RenderFacerView extends View implements Runnable {
                     case 1:
                         canvasPaint.setStyle(Paint.Style.STROKE);
                         if(layerData.containsKey("stroke_size")){
-                            canvasPaint.setStrokeWidth(lowMemoryParser.parseFloat(layerData.get("stroke_size"))+renderScale);
+                            //canvasPaint.setStrokeWidth(lowMemoryParser.parseFloat(layerData.get("stroke_size"))+renderScale);
+                            canvasPaint.setStrokeWidth(parserUtils.getTAGFloatValue(layerData.get("stroke_size"))+renderScale);
                         }
                         break;
                     case 2:
@@ -686,7 +715,8 @@ public class RenderFacerView extends View implements Runnable {
                 }
                 if(layerData.containsKey("opacity")){
                     try {
-                        alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
+                        //alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
+                        alpha = parserUtils.getTAGFloatValue(layerData.get("opacity"));
                     } catch (NumberFormatException e6) {
                         alpha = 100.0f;
                     }
@@ -698,11 +728,14 @@ public class RenderFacerView extends View implements Runnable {
                     }
                 }
                 if(layerData.containsKey("radius")){
-                    radius = Math.round(lowMemoryParser.parseFloat(layerData.get("radius"))*renderScale);
+                    //radius = Math.round(lowMemoryParser.parseFloat(layerData.get("radius"))*renderScale);
+                    radius = Math.round(parserUtils.getTAGFloatValue(layerData.get("radius"))*renderScale);
                 }
                 if(layerData.containsKey("width") && layerData.containsKey("height")){
-                    width = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
-                    height = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
+                    //width = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
+                    //height = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
+                    width = Math.round(parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale);
+                    height = Math.round(parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale);
                 }
                 canvas.save();
                 canvas.rotate(tempR, (float)tempX, (float)tempY);
