@@ -61,8 +61,8 @@ public class MainActivity extends AppCompatActivity {
                             final File faceFile = new File(files[0]);
                             facerView.init(faceFile);
                             faceName.setText(faceFile.getName());
-                            facerView.makeDrawCall();
-                            //facerView.startDraw(10);
+                            //facerView.makeDrawCall();
+                            facerView.startDraw(10);
                         }
                     }
                 });

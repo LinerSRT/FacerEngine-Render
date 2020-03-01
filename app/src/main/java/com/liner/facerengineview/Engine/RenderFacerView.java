@@ -1,4 +1,5 @@
 package com.liner.facerengineview.Engine;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,14 +11,11 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Base64;
-import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.Nullable;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -50,7 +48,6 @@ public class RenderFacerView extends View implements Runnable {
     private ArrayList<HashMap<String, String>> watchFaceLayers;
     private HashMap<String, BitmapDrawable> drawableHashMap;
     private HashMap<String, Typeface> typefaceHashMap;
-    //private LowMemoryParser lowMemoryParser;
     private ParserUtils parserUtils;
     private Thread mThread;
     private boolean isRunning = false;
@@ -59,8 +56,6 @@ public class RenderFacerView extends View implements Runnable {
     private boolean canvasInited;
     private boolean isRoundWatch = true;
     private boolean isLowPower = false;
-    private boolean shouldStroke = false;
-    private int strokeColor = Color.BLACK;
     private float renderScale = 2f;
     private Paint strokePaint = new Paint();
     private Paint canvasPaint = new Paint();
@@ -99,7 +94,6 @@ public class RenderFacerView extends View implements Runnable {
                 } else {
                     watchFace = new JSONArray(manifest);
                 }
-                //lowMemoryParser = new LowMemoryParser(context, watchFace);
                 parserUtils = new ParserUtils(context, watchFace);
                 watchFaceLayers.clear();
                 drawableHashMap.clear();
@@ -113,45 +107,11 @@ public class RenderFacerView extends View implements Runnable {
                             String layerKey = iterator.next();
                             layer.put(layerKey, String.valueOf(layerJson.get(layerKey)));
                         }
-                        File imageFile;
-                        byte[] converted_data;
-                        BitmapDrawable bitmapDrawable;
-                        if(layer.containsKey("hash")) {
-                            imageFile = getFileFromZip(file, "images/" + layer.get("hash"));
-                            if (imageFile != null) {
-                                if (isProtected) {
-                                    try {
-                                        converted_data = Base64.decode(read(imageFile), 0);
-                                        bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
-                                        drawableHashMap.put(layer.get("hash"), bitmapDrawable);
-                                    } catch (IllegalArgumentException e7) {
-                                        bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
-                                        drawableHashMap.put(layer.get("hash"), bitmapDrawable);
-                                    }
-                                } else {
-                                    bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
-                                    drawableHashMap.put(layer.get("hash"), bitmapDrawable);
-                                }
-                            }
-                        }
-                        if(layer.containsKey("hash_round")) {
-                            imageFile = getFileFromZip(file, "images/" + layer.get("hash_round"));
-                            if (imageFile != null) {
-                                if (isProtected) {
-                                    try {
-                                        converted_data = Base64.decode(read(imageFile), 0);
-                                        bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
-                                        drawableHashMap.put(layer.get("hash_round"), bitmapDrawable);
-                                    } catch (IllegalArgumentException e7) {
-                                        bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
-                                        drawableHashMap.put(layer.get("hash_round"), bitmapDrawable);
-                                    }
-                                } else {
-                                    bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
-                                    drawableHashMap.put(layer.get("hash_round"), bitmapDrawable);
-                                }
-                            }
-                        }
+                        insertImageHash(layer, file, "hash");
+                        insertImageHash(layer, file, "hash_round");
+                        insertImageHash(layer, file, "hash_round_ambient");
+                        insertImageHash(layer, file, "hash_square");
+                        insertImageHash(layer, file, "hash_square_ambient");
                         if (layer.containsKey("new_font_name")) {
                             try {
                                 typefaceHashMap.put(layer.get("new_font_name"), Typeface.createFromFile(getFileFromZip(file, "fonts/"+layer.get("new_font_name"))));
@@ -191,10 +151,8 @@ public class RenderFacerView extends View implements Runnable {
         }
         canvas.drawColor(Color.parseColor("#ff000000"));
         canvasPaint.reset();
-        //if(lowMemoryParser != null){
         if(parserUtils != null){
             parserUtils.updateTagValues();
-            //lowMemoryParser.updateData();
             if(watchFaceLayers.size() != 0){
                 for(HashMap<String, String> layerData: watchFaceLayers){
                     if(layerData.containsKey("type")){
@@ -223,7 +181,6 @@ public class RenderFacerView extends View implements Runnable {
     public void run() {
         while (isRunning) {
             try {
-                //lowMemoryParser.updateData();
                 parserUtils.updateTagValues();
                 postInvalidate();
                 Thread.sleep(UPDATE_FREQ);
@@ -279,59 +236,57 @@ public class RenderFacerView extends View implements Runnable {
         String text;
         canvasPaint.reset();
         try {
-            //alpha = Math.round(2.55d * lowMemoryParser.parseFloat(layerData.get("opacity")));
             alpha = Math.round(2.55d * parserUtils.getTAGFloatValue(layerData.get("opacity")));
         } catch (NumberFormatException e){
             alpha = 255f;
         }
         if(alpha != 0f){
-            Typeface typeface;
             if(layerData.containsKey("text")){
-                //text = lowMemoryParser.parse(layerData.get("text"));
                 text = parserUtils.getTAGValue(layerData.get("text"));
             } else {
                 text = "_ERR_";
             }
             if(layerData.containsKey("transform")) {
-                if (layerData.get("transform").matches("1")) {
-                    text.toUpperCase();
-                } else if (layerData.get("transform").matches("2")) {
-                    text.toLowerCase();
+                if (Objects.requireNonNull(layerData.get("transform")).matches("1")) {
+                    text = text.replace(text, text.toUpperCase());
+                } else if (Objects.requireNonNull(layerData.get("transform")).matches("2")) {
+                    text = text.replace(text, text.toLowerCase());
                 }
             }
             if(isLowPower){
                 if(layerData.containsKey("low_power_color")){
-                    canvasPaint.setColor(Integer.parseInt(layerData.get("low_power_color")));
+                    canvasPaint.setColor(Integer.parseInt(Objects.requireNonNull(layerData.get("low_power_color"))));
                 } else {
                     canvasPaint.setColor(-1);
                 }
             } else {
                 if (layerData.containsKey("color")) {
-                    canvasPaint.setColor(Integer.parseInt(layerData.get("color")));
+                    canvasPaint.setColor(Integer.parseInt(Objects.requireNonNull(layerData.get("color"))));
                 } else {
                     canvasPaint.setColor(-1);
                 }
             }
+            int strokeColor;
+            boolean shouldStroke;
             if(layerData.containsKey("text_effect")){
                 shouldStroke = false;
                 strokeColor = Color.WHITE;
                 canvasPaint.clearShadowLayer();
-                switch (Integer.valueOf(layerData.get("text_effect"))){
+                switch (Integer.valueOf(Objects.requireNonNull(layerData.get("text_effect")))){
                     case 1:
                         if(layerData.containsKey("stroke_size")){
-                            canvasPaint.setStrokeWidth(Float.parseFloat(layerData.get("stroke_size")));
+                            canvasPaint.setStrokeWidth(Float.parseFloat(Objects.requireNonNull(layerData.get("stroke_size"))));
                         }
                         if (layerData.containsKey("stroke_color")) {
-                            strokeColor = Integer.parseInt(layerData.get("stroke_color"));
+                            strokeColor = Integer.parseInt(Objects.requireNonNull(layerData.get("stroke_color")));
                         }
                         shouldStroke = true;
-//
                         break;
                     case 2:
                         if(!layerData.containsKey("glow_size") || !layerData.containsKey("glow_color")){
                             break;
                         }
-                        canvasPaint.setShadowLayer((float) Integer.valueOf(layerData.get("glow_size")), 0.0f, 0.0f, Integer.valueOf(layerData.get("glow_color")));
+                        canvasPaint.setShadowLayer((float) Integer.valueOf(Objects.requireNonNull(layerData.get("glow_size"))), 0.0f, 0.0f, Integer.valueOf(Objects.requireNonNull(layerData.get("glow_color"))));
                         shouldStroke = true;
                         break;
                     default:
@@ -344,7 +299,6 @@ public class RenderFacerView extends View implements Runnable {
             }
             if(layerData.containsKey("size")){
                 try {
-                    //canvasPaint.setTextSize(renderScale*lowMemoryParser.parseFloat(layerData.get("size")));
                     canvasPaint.setTextSize(renderScale*parserUtils.getTAGFloatValue(layerData.get("size")));
                 } catch (NumberFormatException e){
                     canvasPaint.setTextSize(1);
@@ -356,13 +310,13 @@ public class RenderFacerView extends View implements Runnable {
                 canvasPaint.setAlpha(Math.round(alpha));
             }
             if (layerData.containsKey("alignment")) {
-                if (layerData.get("alignment").matches("0")) {
+                if (Objects.requireNonNull(layerData.get("alignment")).matches("0")) {
                     canvasPaint.setTextAlign(Paint.Align.LEFT);
                 } else {
-                    if (layerData.get("alignment").matches("1")) {
+                    if (Objects.requireNonNull(layerData.get("alignment")).matches("1")) {
                         canvasPaint.setTextAlign(Paint.Align.CENTER);
                     } else {
-                        if (layerData.get("alignment").matches("2")) {
+                        if (Objects.requireNonNull(layerData.get("alignment")).matches("2")) {
                             canvasPaint.setTextAlign(Paint.Align.RIGHT);
                         } else {
                             canvasPaint.setTextAlign(Paint.Align.LEFT);
@@ -377,8 +331,7 @@ public class RenderFacerView extends View implements Runnable {
             }
             if(layerData.containsKey("r")){
                 canvas.save();
-                //canvas.rotate(lowMemoryParser.parseFloat(layerData.get("r")), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale));
-                canvas.rotate(parserUtils.getTAGFloatValue(layerData.get("r")), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale));
+                canvas.rotate(parserUtils.getTAGFloatValue(layerData.get("r")), parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale, parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
             }
             canvasPaint.setAntiAlias(true);
             if(shouldStroke){
@@ -387,28 +340,24 @@ public class RenderFacerView extends View implements Runnable {
                 if(isLowPower){
                     if(layerData.containsKey("low_power")){
                         if (Boolean.valueOf(layerData.get("low_power"))) {
-                            //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
-                            canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
+                            canvas.drawText(text, parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale, parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale, canvasPaint);
                             canvasPaint.setStyle(Paint.Style.FILL);
                             canvasPaint.setColor(Color.BLACK);
                         }
                     }
                 } else {
-                    //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
-                    canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
+                    canvas.drawText(text, parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale, parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale, canvasPaint);
                 }
             } else {
                 if (isLowPower) {
                     if (layerData.containsKey("low_power")) {
                         if (Boolean.valueOf(layerData.get("low_power"))) {
-                            //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
-                            canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
+                            canvas.drawText(text, parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale, parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale, canvasPaint);
                         }
                     }
                 }
                 if (!isLowPower) {
-                    //canvas.drawText(text, (float) Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale), (float) Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale), canvasPaint);
-                    canvas.drawText(text, (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale), (float) Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale), canvasPaint);
+                    canvas.drawText(text, parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale, parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale, canvasPaint);
                 }
             }
             canvas.restore();
@@ -416,19 +365,11 @@ public class RenderFacerView extends View implements Runnable {
         }
     }
     private void drawImage(Canvas canvas, HashMap<String, String> layerData){
-        File file;
-        byte[] converted_data;
-        BitmapDrawable bitmapDrawable;
         BitmapDrawable mBitmap;
-        int b1;
-        int b2;
-        int b3;
-        int b4;
         float alpha;
         canvasPaint.reset();
         canvasPaint.setAntiAlias(true);
         try {
-            //alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
             alpha = parserUtils.getTAGFloatValue(layerData.get("opacity"));
         } catch (NumberFormatException e6) {
             alpha = 100.0f;
@@ -437,96 +378,33 @@ public class RenderFacerView extends View implements Runnable {
         if (alpha != 0.0f) {
             if (layerData.containsKey("hash")) {
                 mBitmap = drawableHashMap.get(layerData.get("hash"));
-                //int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
-                //int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
-                //int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
-                //int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
-                //float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
-                int tempX = Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale);
-                int tempY = Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
-                int tempWidth = Math.round(parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale);
-                int tempHeight = Math.round(parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale);
+                float tempX = parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale;
+                float tempY = parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale;
+                float tempWidth = parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale;
+                float tempHeight = parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale;
                 float tempR = parserUtils.getTAGFloatValue(layerData.get("r"));
                 int tmpOffset;
                 try {
-                    tmpOffset = Integer.valueOf(layerData.get("alignment"));
+                    tmpOffset = Integer.valueOf(Objects.requireNonNull(layerData.get("alignment")));
                 } catch (NumberFormatException e8) {
                     e8.printStackTrace();
                     tmpOffset = 0;
                 }
-                switch (tmpOffset) {
-                    case 1:
-                        b1 = tempX - (tempWidth / 2);
-                        b2 = tempY;
-                        b3 = tempX + (tempWidth / 2);
-                        b4 = tempHeight + tempY;
-                        break;
-                    case 2:
-                        b1 = tempX - tempWidth;
-                        b2 = tempY;
-                        b3 = tempX;
-                        b4 = tempHeight + tempY;
-                        break;
-                    case 3:
-                        b1 = tempX;
-                        b2 = tempY - (tempHeight / 2);
-                        b3 = tempWidth + tempX;
-                        b4 = tempY + (tempHeight / 2);
-                        break;
-                    case 4:
-                        b1 = tempX - (tempWidth / 2);
-                        b2 = tempY - (tempHeight / 2);
-                        b3 = tempX + (tempWidth / 2);
-                        b4 = tempY + (tempHeight / 2);
-                        break;
-                    case 5:
-                        b1 = tempX - tempWidth;
-                        b2 = tempY - (tempHeight / 2);
-                        b3 = tempX;
-                        b4 = tempY + (tempHeight / 2);
-                        break;
-                    case 6:
-                        b1 = tempX;
-                        b2 = tempY - tempHeight;
-                        b3 = tempX + tempWidth;
-                        b4 = tempY;
-                        break;
-                    case 7:
-                        b1 = tempX - (tempWidth / 2);
-                        b2 = tempY - tempHeight;
-                        b3 = tempX + (tempWidth / 2);
-                        b4 = tempY;
-                        break;
-                    case 8:
-                        b1 = tempX - tempWidth;
-                        b2 = tempY - tempHeight;
-                        b3 = tempX;
-                        b4 = tempY;
-                        break;
-                    default:
-                        b1 = tempX;
-                        b2 = tempY;
-                        b3 = tempWidth + tempX;
-                        b4 = tempHeight + tempY;
-                        break;
-                }
                 if (layerData.containsKey("is_tinted")) {
                     if (layerData.containsKey("tint_color") && mBitmap != null) {
                         if (Boolean.valueOf(layerData.get("is_tinted"))) {
-                            mBitmap.setColorFilter(new PorterDuffColorFilter(Integer.valueOf(layerData.get("tint_color")), PorterDuff.Mode.MULTIPLY));
+                            mBitmap.setColorFilter(new PorterDuffColorFilter(Integer.valueOf(Objects.requireNonNull(layerData.get("tint_color"))), PorterDuff.Mode.MULTIPLY));
                         } else {
                             mBitmap.setColorFilter(null);
                         }
                     }
                 }
-                if (mBitmap != null) {
-                    mBitmap.setAlpha(Math.round(alpha));
-                }
                 if (Boolean.valueOf(layerData.get("low_power")) || !isLowPower) {
                     canvas.save();
-                    canvas.rotate(tempR, (float) tempX, (float) tempY);
+                    canvas.rotate(tempR, tempX, tempY);
                     if (mBitmap != null) {
-                        mBitmap.setBounds(b1, b2, b3, b4);
+                        mBitmap.setAlpha(Math.round(alpha));
+                        calculateAlignmentOffset(tempWidth, tempHeight, tempX, tempY, tmpOffset, mBitmap);
                         mBitmap.draw(canvas);
                     }
                     canvas.restore();
@@ -535,19 +413,11 @@ public class RenderFacerView extends View implements Runnable {
         }
     }
     private void drawDynamicImage(Canvas canvas, HashMap<String, String> layerData){
-        File file;
-        byte[] converted_data;
-        BitmapDrawable bitmapDrawable;
         BitmapDrawable mBitmap;
-        int b1;
-        int b2;
-        int b3;
-        int b4;
         float alpha;
         canvasPaint.reset();
         canvasPaint.setAntiAlias(true);
         try {
-            //alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
             alpha = parserUtils.getTAGFloatValue(layerData.get("opacity"));
         } catch (NumberFormatException e6) {
             alpha = 100.0f;
@@ -556,118 +426,68 @@ public class RenderFacerView extends View implements Runnable {
         if (alpha != 0.0f) {
             if (layerData.containsKey("hash_round")) {
                 String hash = null;
-                if(isLowPower && isRoundWatch){
-                    if (layerData.containsKey("hash_round_ambient")) {
-                        if (layerData.get("hash_round_ambient").length() != 0) {
-                            hash = layerData.get("hash_round_ambient");
+                if(isRoundWatch) {
+                    if (isLowPower){
+                        if (layerData.containsKey("hash_round_ambient")) {
+                            if (Objects.requireNonNull(layerData.get("hash_round_ambient")).length() != 0) {
+                                hash = layerData.get("hash_round_ambient");
+                            }
+                        }
+                    } else {
+                        if (layerData.containsKey("hash_round")) {
+                            if (Objects.requireNonNull(layerData.get("hash_round")).length() != 0) {
+                                hash = layerData.get("hash_round");
+                            }
                         }
                     }
-                    if (layerData.containsKey("hash_square_ambient")) {
-                        hash = layerData.get("hash_square_ambient");
-                    }
-                } else if(isRoundWatch){
-                    if (layerData.containsKey("hash_round")) {
-                        if (layerData.get("hash_round").length() != 0) {
-                            hash = layerData.get("hash_round");
+                } else {
+                    if (isLowPower){
+                        if (layerData.containsKey("hash_square_ambient")) {
+                            if (Objects.requireNonNull(layerData.get("hash_square_ambient")).length() != 0) {
+                                hash = layerData.get("hash_square_ambient");
+                            }
+                        }
+                    } else {
+                        if (layerData.containsKey("hash_square")) {
+                            if (Objects.requireNonNull(layerData.get("hash_square")).length() != 0) {
+                                hash = layerData.get("hash_square");
+                            }
                         }
                     }
                 }
                 mBitmap = drawableHashMap.get(hash);
-                //int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
-                //int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
-                //int tempWidth = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
-                //int tempHeight = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
-                int tempX = Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale);
-                int tempY = Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
-                int tempWidth = Math.round(parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale);
-                int tempHeight = Math.round(parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale);
+                float tempX = parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale;
+                float tempY = parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale;
+                float tempWidth = parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale;
+                float tempHeight = parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale;
                 float tempR;
                 try {
-                    //tempR = lowMemoryParser.parseFloat(layerData.get("r"));
                     tempR = parserUtils.getTAGFloatValue(layerData.get("r"));
                 } catch (NumberFormatException e){
                     tempR = 0f;
                 }
                 int tmpOffset;
                 try {
-                    tmpOffset = Integer.valueOf(layerData.get("alignment"));
+                    tmpOffset = Integer.valueOf(Objects.requireNonNull(layerData.get("alignment")));
                 } catch (NumberFormatException e8) {
                     e8.printStackTrace();
                     tmpOffset = 0;
                 }
-                switch (tmpOffset) {
-                    case 1:
-                        b1 = tempX - (tempWidth / 2);
-                        b2 = tempY;
-                        b3 = tempX + (tempWidth / 2);
-                        b4 = tempHeight + tempY;
-                        break;
-                    case 2:
-                        b1 = tempX - tempWidth;
-                        b2 = tempY;
-                        b3 = tempX;
-                        b4 = tempHeight + tempY;
-                        break;
-                    case 3:
-                        b1 = tempX;
-                        b2 = tempY - (tempHeight / 2);
-                        b3 = tempWidth + tempX;
-                        b4 = tempY + (tempHeight / 2);
-                        break;
-                    case 4:
-                        b1 = tempX - (tempWidth / 2);
-                        b2 = tempY - (tempHeight / 2);
-                        b3 = tempX + (tempWidth / 2);
-                        b4 = tempY + (tempHeight / 2);
-                        break;
-                    case 5:
-                        b1 = tempX - tempWidth;
-                        b2 = tempY - (tempHeight / 2);
-                        b3 = tempX;
-                        b4 = tempY + (tempHeight / 2);
-                        break;
-                    case 6:
-                        b1 = tempX;
-                        b2 = tempY - tempHeight;
-                        b3 = tempX + tempWidth;
-                        b4 = tempY;
-                        break;
-                    case 7:
-                        b1 = tempX - (tempWidth / 2);
-                        b2 = tempY - tempHeight;
-                        b3 = tempX + (tempWidth / 2);
-                        b4 = tempY;
-                        break;
-                    case 8:
-                        b1 = tempX - tempWidth;
-                        b2 = tempY - tempHeight;
-                        b3 = tempX;
-                        b4 = tempY;
-                        break;
-                    default:
-                        b1 = tempX;
-                        b2 = tempY;
-                        b3 = tempWidth + tempX;
-                        b4 = tempHeight + tempY;
-                        break;
-                }
                 if (layerData.containsKey("is_tinted")) {
                     if (layerData.containsKey("tint_color") && mBitmap != null) {
                         if (Boolean.valueOf(layerData.get("is_tinted"))) {
-                            mBitmap.setColorFilter(new PorterDuffColorFilter(Integer.valueOf(layerData.get("tint_color")), PorterDuff.Mode.MULTIPLY));
+                            mBitmap.setColorFilter(new PorterDuffColorFilter(Integer.valueOf(Objects.requireNonNull(layerData.get("tint_color"))), PorterDuff.Mode.MULTIPLY));
                         } else {
                             mBitmap.setColorFilter(null);
                         }
                     }
                 }
-                if (mBitmap != null) {
-                    mBitmap.setAlpha(Math.round(alpha));
-                }
                 if (Boolean.valueOf(layerData.get("low_power")) || !isLowPower) {
                     canvas.save();
-                    canvas.rotate(tempR, (float) tempX, (float) tempY);
+                    canvas.rotate(tempR, tempX, tempY);
                     if (mBitmap != null) {
-                        mBitmap.setBounds(b1, b2, b3, b4);
+                        mBitmap.setAlpha(Math.round(alpha));
+                        calculateAlignmentOffset(tempWidth, tempHeight, tempX, tempY, tmpOffset, mBitmap);
                         mBitmap.draw(canvas);
                     }
                     canvas.restore();
@@ -685,26 +505,22 @@ public class RenderFacerView extends View implements Runnable {
                 int height = 90;
                 int radius = 0;
                 boolean shouldClip = false;
-                //int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
-                //int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
-                //float tempR = lowMemoryParser.parseFloat(layerData.get("r"));
                 int tempX = Math.round(parserUtils.getTAGFloatValue(layerData.get("x")) * renderScale);
                 int tempY = Math.round(parserUtils.getTAGFloatValue(layerData.get("y")) * renderScale);
                 float tempR = parserUtils.getTAGFloatValue(layerData.get("r"));
-                int sides = Integer.parseInt(layerData.get("sides"));
+                int sides = Integer.parseInt(Objects.requireNonNull(layerData.get("sides")));
                 if(layerData.containsKey("color")){
-                    canvasPaint.setColor(Integer.parseInt(layerData.get("color")));
+                    canvasPaint.setColor(Integer.parseInt(Objects.requireNonNull(layerData.get("color"))));
                 } else {
                     canvasPaint.setColor(-1);
                 }
-                switch (Integer.valueOf(layerData.get("shape_opt"))){
+                switch (Integer.valueOf(Objects.requireNonNull(layerData.get("shape_opt")))){
                     case 0:
                         canvasPaint.setStyle(Paint.Style.FILL);
                         break;
                     case 1:
                         canvasPaint.setStyle(Paint.Style.STROKE);
                         if(layerData.containsKey("stroke_size")){
-                            //canvasPaint.setStrokeWidth(lowMemoryParser.parseFloat(layerData.get("stroke_size"))+renderScale);
                             canvasPaint.setStrokeWidth(parserUtils.getTAGFloatValue(layerData.get("stroke_size"))+renderScale);
                         }
                         break;
@@ -715,7 +531,6 @@ public class RenderFacerView extends View implements Runnable {
                 }
                 if(layerData.containsKey("opacity")){
                     try {
-                        //alpha = lowMemoryParser.parseFloat(layerData.get("opacity"));
                         alpha = parserUtils.getTAGFloatValue(layerData.get("opacity"));
                     } catch (NumberFormatException e6) {
                         alpha = 100.0f;
@@ -728,19 +543,16 @@ public class RenderFacerView extends View implements Runnable {
                     }
                 }
                 if(layerData.containsKey("radius")){
-                    //radius = Math.round(lowMemoryParser.parseFloat(layerData.get("radius"))*renderScale);
                     radius = Math.round(parserUtils.getTAGFloatValue(layerData.get("radius"))*renderScale);
                 }
                 if(layerData.containsKey("width") && layerData.containsKey("height")){
-                    //width = Math.round(lowMemoryParser.parseFloat(layerData.get("width")) * renderScale);
-                    //height = Math.round(lowMemoryParser.parseFloat(layerData.get("height")) * renderScale);
                     width = Math.round(parserUtils.getTAGFloatValue(layerData.get("width")) * renderScale);
                     height = Math.round(parserUtils.getTAGFloatValue(layerData.get("height")) * renderScale);
                 }
                 canvas.save();
                 canvas.rotate(tempR, (float)tempX, (float)tempY);
                 if(!shouldClip){
-                    switch (Integer.parseInt(layerData.get("shape_type"))) {
+                    switch (Integer.parseInt(Objects.requireNonNull(layerData.get("shape_type")))) {
                         case SHAPE_CIRCLE:
                             canvas.drawCircle((float) tempX, (float) tempY, (float) radius, canvasPaint);
                             break;
@@ -758,7 +570,7 @@ public class RenderFacerView extends View implements Runnable {
                     }
                 }
                 Path tempPath = new Path();
-                switch (Integer.valueOf(layerData.get("shape_type"))) {
+                switch (Integer.valueOf(Objects.requireNonNull(layerData.get("shape_type")))) {
                     case SHAPE_CIRCLE:
                         tempPath.addCircle((float) tempX, (float) tempY, tempR, Path.Direction.CW);
                         tempPath.close();
@@ -809,6 +621,60 @@ public class RenderFacerView extends View implements Runnable {
         mPath.close();
         return mPath;
     }
+    private void calculateAlignmentOffset(float width, float height, float x, float y, int align, BitmapDrawable drawable){
+        switch (align) {
+            case 1:
+                drawable.setBounds((int)(x - (width / 2)), (int)y, (int)(x + (width / 2)), (int)(height + y));
+                break;
+            case 2:
+                drawable.setBounds((int)(x - width), (int)y, (int)x, (int)(height + y));
+                break;
+            case 3:
+                drawable.setBounds((int)x, (int)(y - (height / 2)), (int)(width + x), (int)(y + (height / 2)));
+                break;
+            case 4:
+                drawable.setBounds((int)(x - (width / 2)), (int)(y - (height / 2)), (int)(x + (width / 2)), (int)(y + (height / 2)));
+                break;
+            case 5:
+                drawable.setBounds((int)(x - width), (int)(y - (height / 2)), (int)x, (int)(y + (height / 2)));
+                break;
+            case 6:
+                drawable.setBounds((int)x, (int)(y - height), (int)(x + width), (int)y);
+                break;
+            case 7:
+                drawable.setBounds((int)(x - (width / 2)), (int)(y - height), (int)(x + (width / 2)), (int)y);
+                break;
+            case 8:
+                drawable.setBounds((int)(x - width), (int)(y - height), (int)x, (int)y);
+                break;
+            default:
+                drawable.setBounds((int)x, (int)y, (int)(width + x), (int)(height + y));
+                break;
+        }
+    }
+    private void insertImageHash(HashMap<String, String> layer, File watchfaceFile, String key){
+        File imageFile;
+        byte[] converted_data;
+        BitmapDrawable bitmapDrawable;
+        if(layer.containsKey(key)) {
+            imageFile = getFileFromZip(watchfaceFile, "images/" + layer.get(key));
+            if (imageFile != null) {
+                if (isProtected) {
+                    try {
+                        converted_data = Base64.decode(read(imageFile), 0);
+                        bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
+                        drawableHashMap.put(layer.get(key), bitmapDrawable);
+                    } catch (IllegalArgumentException e7) {
+                        bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
+                        drawableHashMap.put(layer.get(key), bitmapDrawable);
+                    }
+                } else {
+                    bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
+                    drawableHashMap.put(layer.get(key), bitmapDrawable);
+                }
+            }
+        }
+    }
     private String read(File mFile) {
         String mTemp = "";
         try {
@@ -821,7 +687,6 @@ public class RenderFacerView extends View implements Runnable {
         return mTemp;
     }
     private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth) {
-        int height = options.outHeight;
         int width = options.outWidth;
         int inSampleSize = 1;
         if (width > reqWidth) {
