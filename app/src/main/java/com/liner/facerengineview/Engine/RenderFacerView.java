@@ -1,5 +1,6 @@
 package com.liner.facerengineview.Engine;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,6 +10,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Base64;
 import android.util.Log;
@@ -16,32 +18,39 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import com.liner.facerengineview.Engine.Util.FacerUtil;
 import com.liner.facerengineview.Engine.Util.Parser.LowMemoryParser;
-import com.liner.facerengineview.Engine.Util.WatchFaceData;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
-import static com.liner.facerengineview.Engine.Util.FacerUtil.SHAPE_CIRCLE;
-import static com.liner.facerengineview.Engine.Util.FacerUtil.SHAPE_LINE;
-import static com.liner.facerengineview.Engine.Util.FacerUtil.SHAPE_POLYGON;
-import static com.liner.facerengineview.Engine.Util.FacerUtil.SHAPE_SQUARE;
-import static com.liner.facerengineview.Engine.Util.FacerUtil.SHAPE_TRIANGLE;
 
 public class RenderFacerView extends View implements Runnable {
+    public static final int SHAPE_CIRCLE = 0;
+    public static final int SHAPE_LINE = 3;
+    public static final int SHAPE_POLYGON = 2;
+    public static final int SHAPE_SQUARE = 1;
+    public static final int SHAPE_TRIANGLE = 4;
     private Context context;
     private ArrayList<HashMap<String, String>> watchFaceLayers;
     private HashMap<String, BitmapDrawable> drawableHashMap;
     private HashMap<String, Typeface> typefaceHashMap;
-    private WatchFaceData watchFaceData;
     private LowMemoryParser lowMemoryParser;
     private Thread mThread;
     private boolean isRunning = false;
@@ -53,7 +62,6 @@ public class RenderFacerView extends View implements Runnable {
     private boolean shouldStroke = false;
     private int strokeColor = Color.BLACK;
     private float renderScale = 2f;
-    private File imageDirectory;
     private Paint strokePaint = new Paint();
     private Paint canvasPaint = new Paint();
     private Path canvasPath = new Path();
@@ -72,34 +80,97 @@ public class RenderFacerView extends View implements Runnable {
         setLayerType(LAYER_TYPE_HARDWARE, canvasPaint);
     }
 
-    public void init(WatchFaceData watchFaceData){
-        this.watchFaceData = watchFaceData;
-        imageDirectory = watchFaceData.getWatchFaceImageDir();
-        isProtected = watchFaceData.isProtected();
+    public void init(File file){
         watchFaceLayers = new ArrayList<>();
         drawableHashMap = new HashMap<>();
         typefaceHashMap = new HashMap<>();
-        if(watchFaceData.getWatchFaceJSON() != null){
-            lowMemoryParser = new LowMemoryParser(context, watchFaceData.getWatchFaceJSON());
-            watchFaceLayers.clear();
-            drawableHashMap.clear();
-            typefaceHashMap.clear();
-            for(int i = 0; i<watchFaceData.getWatchFaceJSON().length(); i++){
-                try {
-                    JSONObject layerJson = watchFaceData.getWatchFaceJSON().getJSONObject(i);
-                    HashMap<String, String> layer = new HashMap<>();
-                    Iterator<String> iterator = layerJson.keys();
-                    while (iterator.hasNext()){
-                        String layerKey = iterator.next();
-                        layer.put(layerKey, String.valueOf(layerJson.get(layerKey)));
+        if (file.exists()) {
+            String manifest = read(getFileFromZip(file, "watchface.json"));
+            String description = read(getFileFromZip(file, "description.json"));
+            JSONArray watchFace;
+            try {
+                isProtected = isProtected(new JSONObject(description));
+                if (isProtected) {
+                    if(manifest.contains("\"id\":")){
+                        watchFace = new JSONArray(manifest);
+                    } else {
+                        watchFace = new JSONArray(new String(Base64.decode(manifest, 0), StandardCharsets.UTF_8));
                     }
-                    watchFaceLayers.add(layer);
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                } else {
+                    watchFace = new JSONArray(manifest);
                 }
+                lowMemoryParser = new LowMemoryParser(context, watchFace);
+                watchFaceLayers.clear();
+                drawableHashMap.clear();
+                typefaceHashMap.clear();
+                for(int i = 0; i<watchFace.length(); i++){
+                    try {
+                        JSONObject layerJson = watchFace.getJSONObject(i);
+                        HashMap<String, String> layer = new HashMap<>();
+                        Iterator<String> iterator = layerJson.keys();
+                        while (iterator.hasNext()){
+                            String layerKey = iterator.next();
+                            layer.put(layerKey, String.valueOf(layerJson.get(layerKey)));
+                        }
+                        File imageFile;
+                        byte[] converted_data;
+                        BitmapDrawable bitmapDrawable;
+                        if(layer.containsKey("hash")) {
+                            imageFile = getFileFromZip(file, "images/" + layer.get("hash"));
+                            if (imageFile != null) {
+                                if (isProtected) {
+                                    try {
+                                        converted_data = Base64.decode(read(imageFile), 0);
+                                        bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
+                                        drawableHashMap.put(layer.get("hash"), bitmapDrawable);
+                                    } catch (IllegalArgumentException e7) {
+                                        bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
+                                        drawableHashMap.put(layer.get("hash"), bitmapDrawable);
+                                    }
+                                } else {
+                                    bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
+                                    drawableHashMap.put(layer.get("hash"), bitmapDrawable);
+                                }
+                            }
+                        }
+                        if(layer.containsKey("hash_round")) {
+                            imageFile = getFileFromZip(file, "images/" + layer.get("hash_round"));
+                            if (imageFile != null) {
+                                if (isProtected) {
+                                    try {
+                                        converted_data = Base64.decode(read(imageFile), 0);
+                                        bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
+                                        drawableHashMap.put(layer.get("hash_round"), bitmapDrawable);
+                                    } catch (IllegalArgumentException e7) {
+                                        bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
+                                        drawableHashMap.put(layer.get("hash_round"), bitmapDrawable);
+                                    }
+                                } else {
+                                    bitmapDrawable = new BitmapDrawable(getResources(), decodeSampledBitmap(imageFile.getAbsolutePath(), getWidth()));
+                                    drawableHashMap.put(layer.get("hash_round"), bitmapDrawable);
+                                }
+                            }
+                        }
+                        if (layer.containsKey("new_font_name")) {
+                            try {
+                                typefaceHashMap.put(layer.get("new_font_name"), Typeface.createFromFile(getFileFromZip(file, "fonts/"+layer.get("new_font_name"))));
+                            } catch (Exception e3) {
+                                e3.printStackTrace();
+                            }
+                        }
+                        watchFaceLayers.add(layer);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }
     }
+
+
+
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -294,15 +365,6 @@ public class RenderFacerView extends View implements Runnable {
             if (layerData.containsKey("new_font_name")) {
                 if (typefaceHashMap.containsKey(layerData.get("new_font_name"))) {
                     canvasPaint.setTypeface(typefaceHashMap.get(layerData.get("new_font_name")));
-                } else {
-                    if(watchFaceData != null){
-                        try {
-                            typefaceHashMap.put(layerData.get("new_font_name"), Typeface.createFromFile(new File(watchFaceData.getWatchFaceFontDir(), layerData.get("new_font_name"))));
-                            canvasPaint.setTypeface(Typeface.createFromFile(new File(watchFaceData.getWatchFaceFontDir(), layerData.get("new_font_name"))));
-                        } catch (Exception e3) {
-                            e3.printStackTrace();
-                        }
-                    }
                 }
             }
             if(layerData.containsKey("r")){
@@ -360,24 +422,6 @@ public class RenderFacerView extends View implements Runnable {
         alpha = (float) Math.round(((double) alpha) * 2.55d);
         if (alpha != 0.0f) {
             if (layerData.containsKey("hash")) {
-                if (!drawableHashMap.containsKey(layerData.get("hash"))) {
-                    file = new File(imageDirectory, layerData.get("hash"));
-                    if (file.exists()) {
-                        if (isProtected) {
-                            try {
-                                converted_data = Base64.decode(FacerUtil.read(file), 0);
-                                bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
-                                drawableHashMap.put(layerData.get("hash"), bitmapDrawable);
-                            } catch (IllegalArgumentException e7) {
-                                bitmapDrawable = new BitmapDrawable(getResources(), FacerUtil.decodeSampledBitmap(file.getPath(), getWidth()));
-                                drawableHashMap.put(layerData.get("hash"), bitmapDrawable);
-                            }
-                        } else {
-                            bitmapDrawable = new BitmapDrawable(getResources(), FacerUtil.decodeSampledBitmap(file.getPath(), getWidth()));
-                            drawableHashMap.put(layerData.get("hash"), bitmapDrawable);
-                        }
-                    }
-                }
                 mBitmap = drawableHashMap.get(layerData.get("hash"));
                 int tempX = Math.round(lowMemoryParser.parseFloat(layerData.get("x")) * renderScale);
                 int tempY = Math.round(lowMemoryParser.parseFloat(layerData.get("y")) * renderScale);
@@ -491,43 +535,6 @@ public class RenderFacerView extends View implements Runnable {
         alpha = (float) Math.round(((double) alpha) * 2.55d);
         if (alpha != 0.0f) {
             if (layerData.containsKey("hash_round")) {
-                if (!drawableHashMap.containsKey(layerData.get("hash_round"))) {
-                    file = new File(imageDirectory, layerData.get("hash_round"));
-                    if (file.exists()) {
-                        if (isProtected) {
-                            try {
-                                converted_data = Base64.decode(FacerUtil.read(file), 0);
-                                bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
-                                drawableHashMap.put(layerData.get("hash_round"), bitmapDrawable);
-                            } catch (IllegalArgumentException e7) {
-                                bitmapDrawable = new BitmapDrawable(getResources(), FacerUtil.decodeSampledBitmap(file.getPath(), getWidth()));
-                                drawableHashMap.put(layerData.get("hash_round"), bitmapDrawable);
-                            }
-                        } else {
-                            bitmapDrawable = new BitmapDrawable(getResources(), FacerUtil.decodeSampledBitmap(file.getPath(), getWidth()));
-                            drawableHashMap.put(layerData.get("hash_round"), bitmapDrawable);
-                        }
-                    }
-                }
-                if (layerData.containsKey("hash_round_ambient")) {
-                    if (layerData.containsKey("hash_round_ambient")) {
-                        if (!drawableHashMap.containsKey(layerData.get("hash_round_ambient")) && isRoundWatch) {
-                            file = new File(imageDirectory, layerData.get("hash_round_ambient"));
-                            if (file.exists()) {
-                                Log.d("RenderView", "Loading a bitmap. [ " + layerData.get("hash_round_ambient") + " ]");
-                                if (isProtected) {
-                                    converted_data = Base64.decode(FacerUtil.read(file), 0);
-                                    bitmapDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeByteArray(converted_data, 0, converted_data.length));
-                                    drawableHashMap.put(layerData.get("hash_round_ambient"), bitmapDrawable);
-                                } else {
-                                    bitmapDrawable = new BitmapDrawable(getResources(), FacerUtil.decodeSampledBitmap(file.getPath(), getWidth()));
-                                    drawableHashMap.put(layerData.get("hash_round_ambient"), bitmapDrawable);
-                                }
-                            }
-                        }
-                    }
-                }
-
                 String hash = null;
                 if(isLowPower && isRoundWatch){
                     if (layerData.containsKey("hash_round_ambient")) {
@@ -710,10 +717,10 @@ public class RenderFacerView extends View implements Runnable {
                             break;
                         case SHAPE_POLYGON:
 
-                            canvas.drawPath(FacerUtil.calculatePolygonPoints(renderScale, sides, radius, tempX, tempY, renderScale), canvasPaint);
+                            canvas.drawPath(calculatePolygonPoints(renderScale, sides, radius, tempX, tempY, renderScale), canvasPaint);
                             break;
                         case SHAPE_TRIANGLE:
-                            canvas.drawPath(FacerUtil.calculatePolygonPoints(renderScale, 3, radius, tempX, tempY, renderScale), canvasPaint);
+                            canvas.drawPath(calculatePolygonPoints(renderScale, 3, radius, tempX, tempY, renderScale), canvasPaint);
                             break;
                     }
                 }
@@ -734,14 +741,121 @@ public class RenderFacerView extends View implements Runnable {
                         canvas.restore();
                         break;
                     case SHAPE_POLYGON:
-                        canvas.clipPath(FacerUtil.calculatePolygonPoints(renderScale, sides, radius, tempX, tempY, renderScale));
+                        canvas.clipPath(calculatePolygonPoints(renderScale, sides, radius, tempX, tempY, renderScale));
                         break;
                     case SHAPE_TRIANGLE:
-                        canvas.clipPath(FacerUtil.calculatePolygonPoints(renderScale, 3, radius, tempX, tempY, renderScale));
+                        canvas.clipPath(calculatePolygonPoints(renderScale, 3, radius, tempX, tempY, renderScale));
                         break;
                 }
                 canvas.restore();
             }
+        }
+    }
+    
+    
+    
+    
+    //Util
+    private Path calculatePolygonPoints(float scale, int sides, int radius, int mX, int mY, float mMultiplyFactor) {
+        Path mPath = new Path();
+        double segment = 6.283185307179586d / ((double) sides);
+        double x1 = 0.0d;
+        double y1 = 0.0d;
+        for (int i = 1; i <= sides; i++) {
+            double x = (Math.sin(((double) i) * segment) * ((double) (((float) radius) / mMultiplyFactor))) + ((double) (((float) mX) / mMultiplyFactor));
+            double y = (Math.cos(((double) i) * segment) * ((double) (((float) radius) / mMultiplyFactor))) + ((double) (((float) mY) / mMultiplyFactor));
+            if (i == 1) {
+                mPath.moveTo(((float) x) * scale, ((float) y) * scale);
+                x1 = x;
+                y1 = y;
+            } else {
+                mPath.lineTo(((float) x) * scale, ((float) y) * scale);
+            }
+        }
+        mPath.lineTo(((float) x1) * scale, ((float) y1) * scale);
+        mPath.close();
+        return mPath;
+    }
+    private String read(File mFile) {
+        String mTemp = "";
+        try {
+            FileInputStream stream = new FileInputStream(mFile);
+            FileChannel fc = stream.getChannel();
+            mTemp = Charset.defaultCharset().decode(fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size())).toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return mTemp;
+    }
+    private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth) {
+        int height = options.outHeight;
+        int width = options.outWidth;
+        int inSampleSize = 1;
+        if (width > reqWidth) {
+            while ((width / 2) / inSampleSize > reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
+    private Bitmap decodeSampledBitmap(String file, int reqWidth) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file, options);
+        if (options.outHeight > reqWidth * 2 && options.outWidth > reqWidth * 2) {
+            options.inSampleSize = calculateInSampleSize(options, reqWidth);
+        }
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeFile(file, options);
+    }
+    private boolean isProtected(JSONObject object){
+        if(object != null) {
+            try {
+                if (object.has("is_protected")) {
+                    return object.getBoolean("is_protected");
+                }
+                return false;
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    private File getFileFromZip(File filePath, String name) {
+        File file;
+        try {
+            ZipFile zipFile = new ZipFile(filePath.getAbsolutePath());
+            ZipEntry ze = zipFile.getEntry(name);
+            if (ze == null) {
+                return null;
+            }
+            InputStream inputStream = zipFile.getInputStream(ze);
+            file = File.createTempFile("tempfile", "_watch");
+            OutputStream output = new FileOutputStream(file);
+            try {
+                byte[] buffer = new byte[4096];
+                while (true) {
+                    int read = inputStream.read(buffer);
+                    if (read == -1) {
+                        break;
+                    }
+                    output.write(buffer, 0, read);
+                }
+                output.flush();
+                output.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            } catch (Throwable th) {
+                output.close();
+            }
+            inputStream.close();
+            return file;
+        } catch (IOException e2) {
+            e2.printStackTrace();
+            return null;
         }
     }
 }

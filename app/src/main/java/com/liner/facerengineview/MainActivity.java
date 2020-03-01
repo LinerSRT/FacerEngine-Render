@@ -4,7 +4,6 @@ import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -15,8 +14,6 @@ import com.github.angads25.filepicker.model.DialogConfigs;
 import com.github.angads25.filepicker.model.DialogProperties;
 import com.github.angads25.filepicker.view.FilePickerDialog;
 import com.liner.facerengineview.Engine.RenderFacerView;
-import com.liner.facerengineview.Engine.Util.UnCompress;
-import com.liner.facerengineview.Engine.Util.WatchFaceData;
 
 import java.io.File;
 
@@ -39,10 +36,6 @@ public class MainActivity extends AppCompatActivity {
         stopDraw = findViewById(R.id.stopDraw);
         switchAmbient = findViewById(R.id.switchAmbient);
         switchMode = findViewById(R.id.switchMode);
-        if(!preferenceManager.getString("last_used_watchface", "err").equals("err")){
-            facerView.init(new WatchFaceData(this,preferenceManager.getString("last_used_watchface", "err")));
-            facerView.startDraw(10);
-        }
         selectFace.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -62,21 +55,8 @@ public class MainActivity extends AppCompatActivity {
                     public void onSelectedFilePaths(final String[] files) {
                         if(files.length != 0) {
                             final File faceFile = new File(files[0]);
-                            final String faceName = faceFile.getName().replaceFirst("[.][^.]+$", "");
-                            new UnCompress(getCacheDir() + File.separator + "Facer/" + faceName + "/", files[0], new UnCompress.OnCompleteListener() {
-                                @Override
-                                public void onComplete() {
-                                    preferenceManager.saveString("last_used_watchface", faceName);
-                                    facerView.init(new WatchFaceData(MainActivity.this, faceName));
-                                    facerView.startDraw(10);
-                                }
-
-                                @Override
-                                public void onError() {
-
-                                    Log.e("PARSER", "FAILED UNPACK");
-                                }
-                            }).unzip();
+                            facerView.init(faceFile);
+                            facerView.startDraw(10);
                         }
                     }
                 });
