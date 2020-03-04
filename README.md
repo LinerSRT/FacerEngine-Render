@@ -28,11 +28,11 @@ Render
 
 ##ClockSkin
 
-[![](https://raw.githubusercontent.com/LinerSRT/FacerEngine-Render/master/clockskin.jpg)](ClockSkin)
+![clockSkin](https://raw.githubusercontent.com/LinerSRT/FacerEngine-Render/master/clockskin.jpg | width=50)
 
 ##Facer
 
-[![](https://raw.githubusercontent.com/LinerSRT/FacerEngine-Render/master/facerImage.jpg)](ClockSkin)
+![facer](https://raw.githubusercontent.com/LinerSRT/FacerEngine-Render/master/facerImage.jpg | width=50)
 
 
 ![](https://img.shields.io/badge/Facer%20support-1%20--%202.2-green) (Full support)
