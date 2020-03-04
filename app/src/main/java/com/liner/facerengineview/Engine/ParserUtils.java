@@ -130,9 +130,12 @@ class ParserUtils {
             e.printStackTrace();
         }
     }
+    ParserUtils(Context context) {
+        this.context = context;
+    }
 
 
-    void updateTagValues(){
+    public void updateTagValues(){
         for(Map.Entry<String, String> tag:tagValuesList.entrySet()){
             switch (tag.getKey().charAt(1)){
                 case 'D':
@@ -154,7 +157,7 @@ class ParserUtils {
         }
     }
 
-    private void processLayerTag(JSONObject layerJson, String keyName){
+    public void processLayerTag(JSONObject layerJson, String keyName){
         try {
             if(layerJson.has(keyName)){
                 Pattern pattern = Pattern.compile("#\\w*#");
@@ -173,7 +176,7 @@ class ParserUtils {
     }
 
 
-    String getTAGValue(String tag){
+    public String getTAGValue(String tag){
         if (tag != null) {
             for (int i = 0; i < tag.length() - 1; i++) {
                 if (tag.charAt(i) == '#') {
@@ -216,7 +219,7 @@ class ParserUtils {
         //}
         return tag;
     }
-    float getTAGFloatValue(String tag){
+    public float getTAGFloatValue(String tag){
         if (tag == null) {
             return 0f;
         }
@@ -263,7 +266,7 @@ class ParserUtils {
         //}
         //return 0f;
     }
-    private String[] getTagOnly(String tag){
+    public String[] getTagOnly(String tag){
         Pattern pattern = Pattern.compile("#\\w*#");
         Matcher matcher = pattern.matcher(tag);
         matcher.reset(tag);
@@ -279,7 +282,7 @@ class ParserUtils {
 
 
 
-    private String processWeather(String tag){
+    public String processWeather(String tag){
         String clearedTAG = tag.replaceAll("#", "");
         switch (clearedTAG){
             case "WM":
@@ -366,7 +369,7 @@ class ParserUtils {
     }
 
     //---------- BATTERY ----------
-    private String processBattery(Context context, String tag) {
+    public String processBattery(Context context, String tag) {
         try {
             Intent batteryStatus = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             assert batteryStatus != null;
@@ -393,6 +396,10 @@ class ParserUtils {
                     return String.valueOf((batteryTemp / 10));
                 case "BTIN":
                     return String.valueOf(Math.round((((double) (batteryTemp / 10)) * 1.8d) + 32.0d));
+                case "BSB":
+                    return Boolean.toString(isCharging);
+                case "BLVL":
+                    return String.valueOf(batteryLevel);
                 default:
                     return tag;
 
@@ -582,7 +589,7 @@ class ParserUtils {
         formatter.setGroupingUsed(false);
     }
 
-    String processMath2(String string) {
+    public String processMath2(String string) {
         return parseEquations(parseMethods(string));
     }
 
@@ -774,7 +781,7 @@ class ParserUtils {
     //---------- PHONE ----------
     //"PBP" return phone battery level percentage (redundant, cause cannot get phone status)
     //"PBN" return phone battery level (redundant, cause cannot get phone status)
-    private String processPhone(Context context, String tag){
+    public String processPhone(Context context, String tag){
         try {
             if(tag.replaceAll("#", "").equals("PWL")){
                 return String.valueOf(WifiManager.calculateSignalLevel(((WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE)).getConnectionInfo().getRssi(), 4));
@@ -788,7 +795,7 @@ class ParserUtils {
     //-------------------------
 
     //---------- TIME ----------
-    private String processTime(Context context, String tag){
+    public String processTime(Context context, String tag){
         String[] hours = context.getResources().getStringArray(R.array.watchface_text_hours);
         String[] major = context.getResources().getStringArray(R.array.watchface_text_minutes_major);
         String clearedTAG = tag.replaceAll("#", "");
@@ -1048,7 +1055,7 @@ class ParserUtils {
     //-------------------------
 
     //---------- TEXT ----------
-    private String processText(Context context, String text){
+    public String processText(Context context, String text){
         Pattern pattern = Pattern.compile("#\\w*#");
         Matcher matcher = pattern.matcher(text);
         matcher.reset(text);
@@ -1083,22 +1090,33 @@ class ParserUtils {
     //-------------------------
 
     //---------- HEALTH ----------
-    private String processHealth(String tag){
+    public String processHealth(String tag){
         int stepCount = 1002;
         int avgHeartRate = 89;
+        int calories = 100;
+        int stepTarget = 10000;
+        int caloriesTarget = 200;
+        int distance = 1;
         String clearTAG = tag.replaceAll("#", "");
-        if(clearTAG.equals("ZSC")){
-            return String.valueOf(stepCount);
-        } else if (clearTAG.equals("ZHR")){
-            return String.valueOf(avgHeartRate);
-        } else {
-            return tag;
+        switch (clearTAG){
+            case "ZSC":
+                return tag.replace(tag, String.valueOf(stepCount));
+            case "ZHR":
+                return tag.replace(tag, String.valueOf(avgHeartRate));
+            case "ZSTEPT":
+                return tag.replace(tag, String.valueOf(stepTarget));
+            case "ZCALT":
+                return tag.replace(tag, String.valueOf(caloriesTarget));
+            case "ZCAL":
+                return tag.replace(tag, String.valueOf(calories));
+                default:
+                    return tag;
         }
     }
     //-------------------------
 
     //---------- FINAL ------------
-    private String processFinal(String string) {
+    public String processFinal(String string) {
         Matcher mMatcher = mPattern.matcher(string);
         while (mMatcher.find()) {
             String group1;

@@ -19,9 +19,9 @@
             android:gravity="center">
 
 
-            <com.liner.facerengineview.Engine.RenderFacerView
+            <com.liner.facerengineview.Engine.RenderView
                 android:id="@+id/renderFacer"
-                android:layout_width="match_parent"
+                android:layout_width="400dp"
                 android:layout_height="400dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -91,8 +91,13 @@
                     android:layout_height="wrap_content"
                     android:text="Make 1 draw all" />
             </LinearLayout>
-            <View
+            <SeekBar
+                android:id="@+id/seek"
                 android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="400"/>
+            <View
+                android:layout_width="400dp"
                 android:layout_height="400dp"/>
         </LinearLayout>
     </ScrollView>

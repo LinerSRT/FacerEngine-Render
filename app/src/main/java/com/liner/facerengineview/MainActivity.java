@@ -1,9 +1,11 @@
 package com.liner.facerengineview;
 
 import android.Manifest;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -14,13 +16,13 @@ import com.github.angads25.filepicker.controller.DialogSelectionListener;
 import com.github.angads25.filepicker.model.DialogConfigs;
 import com.github.angads25.filepicker.model.DialogProperties;
 import com.github.angads25.filepicker.view.FilePickerDialog;
-import com.liner.facerengineview.Engine.RenderFacerView;
+import com.liner.facerengineview.Engine.RenderView;
 
 import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
     private PreferenceManager preferenceManager;
-    private RenderFacerView facerView;
+    private RenderView facerView;
     private Button selectFace, startDraw, stopDraw, switchAmbient, switchMode, makeDrawCall;
     private TextView faceName;
     @Override
@@ -59,10 +61,28 @@ public class MainActivity extends AppCompatActivity {
                     public void onSelectedFilePaths(final String[] files) {
                         if(files.length != 0) {
                             final File faceFile = new File(files[0]);
-                            facerView.init(faceFile);
-                            faceName.setText(faceFile.getName());
-                            //facerView.makeDrawCall();
-                            facerView.startDraw(10);
+                            new FileReader(faceFile).read(new FileReader.IFileReader() {
+                                @Override
+                                public void onReadComplete(File file, FileReader.SKIN_FORMAT skinFormat, Bitmap preview) {
+                                    Log.e("Reader", "Complete read file, Format: "+skinFormat);
+                                    switch (skinFormat){
+                                        case CLOCKSKIN:
+                                            facerView.initClockSkin(file);
+                                            facerView.startDraw(10);
+                                            break;
+                                        case FACER:
+                                            facerView.init(file);
+                                            facerView.startDraw(10);
+                                            break;
+                                    }
+                                    faceName.setText(file.getName());
+                                }
+
+                                @Override
+                                public void onReadError(String reason) {
+                                    Log.e("Reader", "Read file error, reason"+reason);
+                                }
+                            });
                         }
                     }
                 });
