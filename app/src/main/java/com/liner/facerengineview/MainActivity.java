@@ -1,7 +1,11 @@
 package com.liner.facerengineview;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -11,6 +15,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.angads25.filepicker.controller.DialogSelectionListener;
 import com.github.angads25.filepicker.model.DialogConfigs;
@@ -19,29 +26,32 @@ import com.github.angads25.filepicker.view.FilePickerDialog;
 import com.liner.facerengineview.Engine.RenderView;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class MainActivity extends AppCompatActivity {
-    private PreferenceManager preferenceManager;
-    private RenderView facerView;
-    private Button selectFace, startDraw, stopDraw, switchAmbient, switchMode, makeDrawCall;
-    private TextView faceName;
+    private Button selectFace;
+    private List<SkinHolder> clockList;
+    public RecyclerView recyclerView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        preferenceManager = PreferenceManager.getInstance(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
             checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
-        facerView = findViewById(R.id.renderFacer);
         selectFace = findViewById(R.id.chooseFace);
-        startDraw = findViewById(R.id.startDraw);
-        stopDraw = findViewById(R.id.stopDraw);
-        switchAmbient = findViewById(R.id.switchAmbient);
-        switchMode = findViewById(R.id.switchMode);
-        makeDrawCall = findViewById(R.id.makeDrawCall);
-        faceName = findViewById(R.id.faceName);
+        clockList = new ArrayList<>();
+        searchClockSkinSD(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
         selectFace.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -60,65 +70,86 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onSelectedFilePaths(final String[] files) {
                         if(files.length != 0) {
-                            final File faceFile = new File(files[0]);
-                            new FileReader(faceFile).read(new FileReader.IFileReader() {
-                                @Override
-                                public void onReadComplete(File file, FileReader.SKIN_FORMAT skinFormat, Bitmap preview) {
-                                    Log.e("Reader", "Complete read file, Format: "+skinFormat);
-                                    switch (skinFormat){
-                                        case CLOCKSKIN:
-                                            facerView.initClockSkin(file);
-                                            facerView.startDraw(10);
-                                            break;
-                                        case FACER:
-                                            facerView.init(file);
-                                            facerView.startDraw(10);
-                                            break;
-                                    }
-                                    faceName.setText(file.getName());
-                                }
-
-                                @Override
-                                public void onReadError(String reason) {
-                                    Log.e("Reader", "Read file error, reason"+reason);
-                                }
-                            });
+                            Intent intent = new Intent(MainActivity.this, WatchFaceViewActivity.class);
+                            intent.putExtra("skinpath", files[0]);
+                            startActivity(intent);
                         }
                     }
                 });
-                facerView.stopDraw();
                 dialog.show();
             }
         });
-        startDraw.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                facerView.startDraw();
+
+
+        recyclerView = findViewById(R.id.chooseRecycler);
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        SkinChooseAdapter clockSkinChooseAdapter = new SkinChooseAdapter(this, clockList);
+        recyclerView.setAdapter(clockSkinChooseAdapter);
+    }
+
+
+    public void searchClockSkinSD(File file){
+        File[] fileList = file.listFiles();
+        if(fileList != null) {
+            for (File item : Objects.requireNonNull(file.listFiles())) {
+                if (item.isDirectory()) {
+                    searchClockSkinSD(item);
+                } else {
+                    if(isCorrectSkinFile(item)){
+                        Log.e("Loader", "Add: "+item.getName());
+                        SkinHolder skinHolder = new SkinHolder(item.getAbsolutePath(), getPreview(item));
+                        clockList.add(skinHolder);
+                    }
+                }
             }
-        });
-        stopDraw.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                facerView.stopDraw();
+        }
+    }
+
+    public static boolean isCorrectSkinFile(File file) {
+        try {
+            ZipFile zip = new ZipFile(file);
+            Enumeration<? extends ZipEntry> entries = zip.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (!entry.isDirectory() && entry.getName().endsWith("img_clock_preview.png")) {
+                    zip.close();
+                    return true;
+                } else if(!entry.isDirectory() && entry.getName().endsWith("clock_skin_model.png")){
+                    zip.close();
+                    return true;
+                } else if(!entry.isDirectory() && entry.getName().endsWith("preview.png")){
+                    zip.close();
+                    return true;
+                } else if(!entry.isDirectory() && entry.getName().endsWith("preview.jpg")){
+                    zip.close();
+                    return true;
+                }
             }
-        });
-        switchAmbient.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                facerView.setLowPower(!facerView.isLowPower());
+            zip.close();
+        } catch (IOException e) {
+            return false;
+        }
+        return false;
+    }
+
+    public Bitmap getPreview(File file){
+        try {
+            ZipFile zipFile = new ZipFile(file.getAbsolutePath());
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while(entries.hasMoreElements()) {
+                ZipEntry zipEntry = entries.nextElement();
+                Bitmap bmp;
+                if(!zipEntry.isDirectory())
+                if(zipEntry.getName().contains("img_clock_preview") || zipEntry.getName().contains("clock_skin_model") || zipEntry.getName().contains("preview")){
+                    bmp = BitmapFactory.decodeStream(zipFile.getInputStream(zipEntry));
+                    bmp.setDensity(Resources.getSystem().getDisplayMetrics().densityDpi);
+                    return bmp;
+                }
             }
-        });
-        switchMode.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                facerView.setRoundWatch(!facerView.isRoundWatch());
-            }
-        });
-        makeDrawCall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                facerView.makeDrawCall();
-            }
-        });
+            zipFile.close();
+        } catch (IOException e){
+            return null;
+        }
+        return null;
     }
 }

@@ -1,104 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
     tools:context=".MainActivity">
 
+    <Button
+        android:id="@+id/chooseFace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose manual" />
 
-
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chooseRecycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center">
-
-
-            <com.liner.facerengineview.Engine.RenderView
-                android:id="@+id/renderFacer"
-                android:layout_width="400dp"
-                android:layout_height="400dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/faceName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="FACE NAME"
-                android:gravity="center"
-                android:textSize="25sp"
-                android:textColor="#000"
-                android:textStyle="bold"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="10dp"/>
-
-            <LinearLayout
-                android:id="@+id/linearLayout2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal"
-                app:layout_constraintTop_toBottomOf="@+id/renderFacer">
-
-                <Button
-                    android:id="@+id/chooseFace"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Choose .face" />
-
-                <Button
-                    android:id="@+id/startDraw"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Start draw" />
-
-                <Button
-                    android:id="@+id/stopDraw"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Stop draw" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal"
-                app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
-
-                <Button
-                    android:id="@+id/switchAmbient"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ambient" />
-
-                <Button
-                    android:id="@+id/switchMode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Mode" />
-
-                <Button
-                    android:id="@+id/makeDrawCall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Make 1 draw all" />
-            </LinearLayout>
-            <SeekBar
-                android:id="@+id/seek"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="400"/>
-            <View
-                android:layout_width="400dp"
-                android:layout_height="400dp"/>
-        </LinearLayout>
-    </ScrollView>
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
