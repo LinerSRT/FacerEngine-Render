@@ -24,6 +24,10 @@ Render
 - [ ] Using shaders
 - [ ] Draw weather condition images
 - [ ] Switch mode (ambient, normal, detailed)
+##ClockSkin
+[![](https://raw.githubusercontent.com/LinerSRT/FacerEngine-Render/master/clockskin.jpg)](ClockSkin)
+##Facer
+[![](https://raw.githubusercontent.com/LinerSRT/FacerEngine-Render/master/facerImage.jpg)](ClockSkin)
 
 
 ![](https://img.shields.io/badge/Facer%20support-1%20--%202.2-green) (Full support)
